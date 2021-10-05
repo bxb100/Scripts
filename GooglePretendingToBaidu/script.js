@@ -4,8 +4,8 @@
 // @source https://github.com/bxb100/Scripts/blob/main/GooglePretendingToBaidu/script.js
 // @version 2021.10.5
 // @description 用Google搜索,很多人看到屏幕后会问你怎么上Google的.所以当我们把Google的logo换成百度,他们就不会问那么多问题了!
-// @author somereason
 // @author Johnbi
+// @author somereason
 // @license MIT
 // @date 2021-10-05
 // @run-at document-body
