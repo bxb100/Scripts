@@ -116,7 +116,7 @@ function append() {
 (function () {
     'use strict';
     window.onbeforescriptexecute = (e) => {
-        const src = e.script.src;
+        const src = e.script?.src;
         if (src && src.search(/wp-playlist.min\.js/) != -1) {
             console.log('------------')
             e.preventDefault();
