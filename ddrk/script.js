@@ -109,7 +109,7 @@ function hideElement(id) {
 function append() {
     var s = document.createElement("script");
     s.type = "text/javascript";
-    s.src = "https://cdn.jsdelivr.net/gh/bxb100/Scripts@ddrk/wp-playlist-replace.js";
+    s.src = "https://cdn.jsdelivr.net/gh/bxb100/Scripts@main/ddrk/wp-playlist-replace.js";
     document.head.appendChild(s);
 }
 
