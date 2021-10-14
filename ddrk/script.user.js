@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ddrk广告屏蔽
 // @namespace    com.pers.scripts
-// @version      1.0.1
+// @version      1.0.2
 // @description  临时屏蔽
 // @author       Johnbi
 // @date         2021-10-14
@@ -107,9 +107,16 @@ function hideElement(id) {
 }
 
 function append() {
-    var s = document.createElement("script");
+    let s = document.createElement("script");
     s.type = "text/javascript";
     s.src = "https://cdn.jsdelivr.net/gh/bxb100/Scripts@main/ddrk/wp-playlist-replace.js";
+    document.head.appendChild(s);
+}
+
+function appendCss() {
+    let s = document.createElement("style");
+    s.type = "text/css";
+    s.innerText = `video {outline: none;}`;
     document.head.appendChild(s);
 }
 
@@ -125,16 +132,13 @@ function append() {
         };
     };
 
+    appendCss();
+
     window.addEventListener('DOMContentLoaded', (event) => {
         hideElement("afc_sidebar_2842");
         hideElement("sajdhfbjwhe");
         hideElement("kasjbgih");
         hideElement("iaujwnefhw");
         hideElement("fkasjgf");
-        // 去除视频边栏
-        const videoEle = document.getElementsByTagName("video")?.[0];
-        if (videoEle) {
-            videoEle.style.outline = 'none';
-        }
     });
 })();
