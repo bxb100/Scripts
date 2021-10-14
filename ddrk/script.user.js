@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ddrk广告屏蔽
 // @namespace    com.pers.scripts
-// @version      1.0.0
+// @version      1.0.1
 // @description  临时屏蔽
 // @author       Johnbi
 // @date         2021-10-14
@@ -131,6 +131,10 @@ function append() {
         hideElement("kasjbgih");
         hideElement("iaujwnefhw");
         hideElement("fkasjgf");
-
+        // 去除视频边栏
+        const videoEle = document.getElementsByTagName("video")?.[0];
+        if (videoEle) {
+            videoEle.style.outline = 'none';
+        }
     });
 })();
