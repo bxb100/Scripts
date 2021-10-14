@@ -192,6 +192,9 @@ document.addEventListener('DOMContentLoaded', function () {
             if (i === 0) {
                 //开始的大G
                 navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat 0px 0px`;
+            } else if (i === navTabSpans.length - 1) {
+                // 最后的 gle 去除
+                navTabSpans[i]?.remove();
             } else if (navTabSpans[i].classList.contains('NVbCr')) {
                 // 变灰色的导航页
                 navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat -144px -288px`;
