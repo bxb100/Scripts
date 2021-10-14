@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function () {
         for (let i = 0; i < navTabSpans.length; i++) {
             navTabSpans[i].style.width = '22px';
             if (i === 0) {
-                //开始的大G
+                // 开始的大G
                 navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat 0px 0px`;
             } else if (i === navTabSpans.length - 1) {
                 // 最后的 gle 去除
@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // 变灰色的导航页
                 navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat -144px -288px`;
             } else {
-                //当前导航页
+                // 当前导航页
                 navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat -96px -288px`;
             }
         }
