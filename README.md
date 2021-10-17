@@ -6,4 +6,4 @@ Tampermonkey scripts repository
 
 * [Google search page pretending to be Baidu search page](GooglePretendingToBaidu/script.user.js)
 
-* [ddrk remove ad](ddrk/script.user.js)
+* self use [ddrk remove ad](ddrk/script.user.js)
