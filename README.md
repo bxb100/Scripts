@@ -1,6 +1,6 @@
 # Scripts
 
-Tampermonkey  scripts repository
+Tampermonkey scripts repository
 
 ## Resources
 
