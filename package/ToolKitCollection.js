@@ -1,3 +1,24 @@
+const Event = class {
+    constructor(script, target) {
+        this.script = script;
+        this.target = target;
+
+        this._cancel = false;
+        this._replace = null;
+        this._stop = false;
+    }
+
+    preventDefault() {
+        this._cancel = true;
+    }
+    stopPropagation() {
+        this._stop = true;
+    }
+    replacePayload(payload) {
+        this._replace = payload;
+    }
+};
+
 const ToolKitCollection = {
     description: () => {
         console.log(
@@ -20,27 +41,6 @@ const ToolKitCollection = {
 
 (() => {
     "use strict";
-
-    const Event = class {
-        constructor(script, target) {
-            this.script = script;
-            this.target = target;
-
-            this._cancel = false;
-            this._replace = null;
-            this._stop = false;
-        }
-
-        preventDefault() {
-            this._cancel = true;
-        }
-        stopPropagation() {
-            this._stop = true;
-        }
-        replacePayload(payload) {
-            this._replace = payload;
-        }
-    };
 
     let callbacks = [];
     window.addBeforeScriptExecuteListener = (f) => {
