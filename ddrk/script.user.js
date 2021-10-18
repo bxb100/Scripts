@@ -1,19 +1,18 @@
 // ==UserScript==
 // @name         ddrk广告屏蔽
 // @namespace    com.pers.scripts
-// @version      1.0.4
+// @version      1.0.5
 // @description  临时屏蔽
 // @author       Johnbi
 // @date         2021-10-14
 // @run-at document-start
 // @match        https://ddrk.me/*
 // @icon         https://ddrk.me/favicon-32x32.png
-// @require https://greasyfork.org/scripts/434057-toolkitcollection/code/ToolKitCollection.js?version=980251
+// @require https://greasyfork.org/scripts/434057-toolkitcollection/code/ToolKitCollection.js?version=980261
 // @grant        none
 // ==/UserScript==
 
 /*global ToolKitCollection*/
-
 function hideElement(id) {
     try {
         document.getElementById(id).remove()
@@ -36,6 +35,8 @@ function appendCss() {
     'use strict';
     ToolKitCollection.description();
 
+    let cnzzBlock = false;
+    let lncldglobal = false;
     window.onbeforescriptexecute = (e) => {
         const src = e.script?.src;
         if (src && src.search(/wp-playlist.min\.js/) != -1) {
@@ -43,6 +44,8 @@ function appendCss() {
             e.stopPropagation();
             append();
         };
+        cnzzBlock = ToolKitCollection.eventStopByStart(e, 'var cnzz_protocol', cnzzBlock)
+        lncldglobal = ToolKitCollection.eventStopByStart(e, 'var ourl', lncldglobal)
     };
 
     appendCss();
