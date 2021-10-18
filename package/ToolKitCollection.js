@@ -7,7 +7,7 @@ const ToolKitCollection = {
     },
     eventStopByStart: (event, text, bool) => {
         const innerText = event?.scirpt?.innerText
-        if (!bool && innerText && innerText.startsWith(text)) {
+        if (!bool && innerText && innerText.trim().startsWith(text)) {
             bool = true;
             event.preventDefault();
         }
