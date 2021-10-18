@@ -6,7 +6,7 @@ const ToolKitCollection = {
             "\nbusy writing bugs\nsee more in https://github.com/bxb100");
     },
     eventStopByStart: (event, text, bool) => {
-        const innerText = event?.scirpt?.innerText
+        const innerText = event?.script?.innerText
         if (!bool && innerText && innerText.trim().startsWith(text)) {
             bool = true;
             event.preventDefault();
