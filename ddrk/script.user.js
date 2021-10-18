@@ -48,9 +48,8 @@ function appendCss() {
         lncldglobal = ToolKitCollection.eventStopByStart(e, 'var ourl', lncldglobal)
     };
 
-    appendCss();
-
     window.addEventListener('DOMContentLoaded', (event) => {
+        appendCss();
         hideElement("afc_sidebar_2842");
         hideElement("sajdhfbjwhe");
         hideElement("kasjbgih");
