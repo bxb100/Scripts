@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ddrk广告屏蔽
 // @namespace    com.pers.scripts
-// @version      1.0.3
+// @version      1.0.4
 // @description  临时屏蔽
 // @author       Johnbi
 // @date         2021-10-14
@@ -116,9 +116,8 @@ function append() {
 
 function appendCss() {
     let s = document.createElement("style");
-    s.type = "text/css";
     s.innerText = `video {outline: none;}`;
-    document.head.appendChild(s);
+    document.documentElement.appendChild(s);
 }
 
 (function () {
@@ -142,4 +141,4 @@ function appendCss() {
         hideElement("iaujwnefhw");
         hideElement("fkasjgf");
     });
-})();
+}, false)();
