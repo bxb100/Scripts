@@ -8,6 +8,7 @@
 // @run-at document-start
 // @match        https://ddrk.me/*
 // @icon         https://ddrk.me/favicon-32x32.png
+// @require https://greasyfork.org/scripts/434057-toolkitcollection/code/ToolKitCollection.js?version=980108
 // @grant        none
 // ==/UserScript==
 
@@ -125,7 +126,7 @@ function appendCss() {
     window.onbeforescriptexecute = (e) => {
         const src = e.script?.src;
         if (src && src.search(/wp-playlist.min\.js/) != -1) {
-            console.log('------------')
+            ToolKitCollection.description();
             e.preventDefault();
             e.stopPropagation();
             append();
