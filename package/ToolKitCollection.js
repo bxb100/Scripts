@@ -99,7 +99,7 @@ const ToolKitCollection = {
         if (!bool && innerText && innerText.trim().startsWith(text)) {
             bool = true;
             event.preventDefault();
-            e.stopPropagation();
+            event.stopPropagation();
         }
         return bool;
     }
