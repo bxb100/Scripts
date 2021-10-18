@@ -33,13 +33,13 @@ function appendCss() {
 
 (function () {
     'use strict';
-    ToolKitCollection.description();
 
     let cnzzBlock = false;
     let lncldglobal = false;
     window.onbeforescriptexecute = (e) => {
         const src = e.script?.src;
         if (src && src.search(/wp-playlist.min\.js/) != -1) {
+            ToolKitCollection.description();
             e.preventDefault();
             e.stopPropagation();
             append();
