@@ -12,12 +12,13 @@
 // @grant        none
 // ==/UserScript==
 
-// Library code, licensed under MIT
-// https://github.com/jspenguin2017/Snippets/blob/master/onbeforescriptexecute.html
+/*global ToolKitCollection*/
 
 (() => {
     "use strict";
 
+    // Library code, licensed under MIT
+    // https://github.com/jspenguin2017/Snippets/blob/master/onbeforescriptexecute.html 
     const Event = class {
         constructor(script, target) {
             this.script = script;
@@ -109,7 +110,6 @@ function hideElement(id) {
 
 function append() {
     let s = document.createElement("script");
-    s.type = "text/javascript";
     s.src = "https://cdn.jsdelivr.net/gh/bxb100/Scripts@main/ddrk/wp-playlist-replace.js";
     document.head.appendChild(s);
 }
@@ -122,10 +122,11 @@ function appendCss() {
 
 (function () {
     'use strict';
+    ToolKitCollection.description();
+
     window.onbeforescriptexecute = (e) => {
         const src = e.script?.src;
         if (src && src.search(/wp-playlist.min\.js/) != -1) {
-            ToolKitCollection.description();
             e.preventDefault();
             e.stopPropagation();
             append();
@@ -141,4 +142,5 @@ function appendCss() {
         hideElement("iaujwnefhw");
         hideElement("fkasjgf");
     });
-}, false)();
+
+})();
