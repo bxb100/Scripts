@@ -8,7 +8,7 @@
 // @run-at document-start
 // @match        https://ddrk.me/*
 // @icon         https://ddrk.me/favicon-32x32.png
-// @require https://greasyfork.org/scripts/434057-toolkitcollection/code/ToolKitCollection.js?version=980108
+// @require https://greasyfork.org/scripts/434057-toolkitcollection/code/ToolKitCollection.js?version=980110
 // @grant        none
 // ==/UserScript==
 
