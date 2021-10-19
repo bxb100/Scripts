@@ -34,19 +34,15 @@ function appendCss() {
 (function () {
     'use strict';
 
-    let cnzzBlock = false;
-    let lncldglobal = false;
-    window.onbeforescriptexecute = (e) => {
-        const src = e.script?.src;
+    ToolKitCollection.beforescriptexecute((event) => {
+        const src = event?.target?.src;
         if (src && src.search(/wp-playlist.min\.js/) != -1) {
             ToolKitCollection.description();
-            e.preventDefault();
-            e.stopPropagation();
+            event.preventDefault();
+            event.stopPropagation();
             append();
         };
-        cnzzBlock = ToolKitCollection.eventStopByStart(e, 'var cnzz_protocol', cnzzBlock)
-        lncldglobal = ToolKitCollection.eventStopByStart(e, 'var ourl', lncldglobal)
-    };
+    });
 
     window.addEventListener('DOMContentLoaded', (event) => {
         appendCss();

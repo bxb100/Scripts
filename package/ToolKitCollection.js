@@ -8,6 +8,8 @@
         constructor(script, target) {
             this.script = script;
             this.target = target;
+            // copy
+            this.target.src = this.script.src;
 
             this._cancel = false;
             this._replace = null;
@@ -26,13 +28,13 @@
     };
 
     let callbacks = [];
-    window.addBeforeScriptExecuteListener = (f) => {
+    Window.prototype.addBeforeScriptExecuteListener = (f) => {
         if (typeof f !== "function") {
             throw new Error("Event handler must be a function.");
         }
         callbacks.push(f);
     };
-    window.removeBeforeScriptExecuteListener = (f) => {
+    Window.prototype.removeBeforeScriptExecuteListener = (f) => {
         let i = callbacks.length;
         while (i--) {
             if (callbacks[i] === f) {
@@ -89,18 +91,30 @@
 
 const ToolKitCollection = {
     description: () => {
+        if (ToolKitCollection.isFirefox()) {
+            console.log("Hello 👋, 42 is an answer for everything.\nbusy writing bugs\nsee more in https://github.com/bxb100");
+            return;
+        }
         console.log(
             "Hello 👋, 42 is an answer for everything.\n %c..",
             "background: url(https://cdn.jsdelivr.net/gh/bxb100/bxb100@master/png2.png) no-repeat left center;font-size: 400px;color: transparent;",
             "\nbusy writing bugs\nsee more in https://github.com/bxb100");
     },
     eventStopByStart: (event, text, bool) => {
-        const innerText = event?.script?.innerText
+        const innerText = event?.target?.innerText
         if (!bool && innerText && innerText.trim().startsWith(text)) {
-            bool = true;
             event.preventDefault();
             event.stopPropagation();
+            return true;
         }
         return bool;
-    }
+    },
+    isFirefox: () => navigator.userAgent.indexOf('Firefox') != -1,
+    beforescriptexecute: (callback) => {
+        if (ToolKitCollection.isFirefox()) {
+            window.addEventListener('beforescriptexecute', callback);
+        } else {
+            window.addBeforeScriptExecuteListener(callback);
+        }
+    },
 };
