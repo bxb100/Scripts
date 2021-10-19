@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         ddrk广告屏蔽
 // @namespace    com.pers.scripts
-// @version      1.0.6
+// @version      1.0.7
 // @description  临时屏蔽
 // @author       Johnbi
 // @date         2021-10-14
 // @run-at document-start
 // @match        https://ddrk.me/*
 // @icon         https://ddrk.me/favicon-32x32.png
-// @require https://greasyfork.org/scripts/434057-toolkitcollection/code/ToolKitCollection.js?version=980267
+// @require https://greasyfork.org/scripts/434057-toolkitcollection/code/ToolKitCollection.js?version=980513
 // @grant        none
 // ==/UserScript==
 
