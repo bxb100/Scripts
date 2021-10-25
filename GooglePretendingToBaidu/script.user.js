@@ -2,7 +2,7 @@
 // @name 把Google搜索伪装成百度搜索
 // @namespace com.pers.scripts
 // @source https://github.com/bxb100/Scripts/blob/main/GooglePretendingToBaidu/script.user.js
-// @version 1.0.1
+// @version 1.0.2
 // @description 用Google搜索,很多人看到屏幕后会问你怎么上Google的.所以当我们把Google的logo换成百度,他们就不会问那么多问题了!
 // @author Johnbi
 // @author somereason
@@ -165,7 +165,7 @@ function replaceLogo() {
         const footerDiv = document.querySelector('body>div>div:last-child');
         // 国家地区显示隐藏
         const region = footerDiv.querySelector('div');
-        if (region.nextElementSibling) {
+        if (!!!region.getAttribute('jscontroller') && region.nextElementSibling) {
             region.remove();
         }
         let settingNodes = footerDiv.getElementsByTagName('a');
