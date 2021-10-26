@@ -11,7 +11,7 @@
 
 	var videoServer;
 	if (Math.random() >= 0.4) {
-		videoServer = "https://v3.ddrk.me";
+		videoServer = "https://v2.ddrk.me";
 	}
 	else {
 		videoServer = "https://v2.ddrk.me";
