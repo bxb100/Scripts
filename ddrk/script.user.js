@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ddrk广告屏蔽
 // @namespace    com.pers.scripts
-// @version      1.0.7
+// @version      1.0.8
 // @description  临时屏蔽
 // @author       Johnbi
 // @date         2021-10-14
@@ -21,7 +21,7 @@ function hideElement(id) {
 
 function append() {
     let s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/gh/bxb100/Scripts@main/ddrk/wp-playlist-replace.js";
+    s.src = "https://cdn.jsdelivr.net/gh/bxb100/Scripts@main/ddrk/wp-playlist-replace.js?ver=108";
     document.head.appendChild(s);
 }
 
