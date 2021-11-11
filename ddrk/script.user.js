@@ -21,7 +21,7 @@ function hideElement(id) {
 
 function append() {
     let s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/gh/bxb100/Scripts@main/ddrk/wp-playlist-replace.js?ver=108";
+    s.src = "https://cdn.jsdelivr.net/gh/bxb100/Scripts@main/ddrk/wp-playlist-replace.js?ver=109";
     document.head.appendChild(s);
 }
 
