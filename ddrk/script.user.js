@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ddrk广告屏蔽
 // @namespace    com.pers.scripts
-// @version      1.0.8
+// @version      1.0.9
 // @description  临时屏蔽
 // @author       Johnbi
 // @date         2021-10-14
