@@ -10,13 +10,13 @@
 	const zimuOss = "https://ddrk.oss-accelerate.aliyuncs.com";
 	
 	var videoServer;
-	if (Math.random() >= 0.4) {
-		videoServer = "https://v2.ddrk.me";
+	if (Math.random() >= 0.35) {
+		videoServer = "https://v3.ddrk.me:19443";
 	}
 	else {
-		videoServer = "https://v2.ddrk.me";
+		videoServer = "https://v2.ddrk.me:9543";
 	}
-	if (document.domain == 'ddys.tv') videoServer = "https://v.ddys.tv";
+	if (document.domain == 'ddys.tv') videoServer = "https://v.ddys.tv:19543";
 	
 	var playlistDiv = $("div.wp-video-playlist");
 	if (!deviceInfoQJ) window.deviceInfoQJ = new UAParser();
@@ -187,7 +187,7 @@
 					myPlayer.bigPlayButton.hide();
 					if (SrcType == 0 || SrcType == 3 ) {
 						if (isiOS || deviceInfoQJ.getOS().name == 'Mac OS') {
-							fetch(videoServer+':'+'9543'+'/video?id='+vtracksrc+'&type=mix').then(
+							fetch(videoServer+'/video?id='+vtracksrc+'&type=mix').then(
 								function(response) {
 									response.json().then(function(data) {
 										var urll = data.url;
@@ -203,7 +203,7 @@
 							)
 						}
 						else if (deviceInfoQJ.getOS().name == 'Windows' || (/Linux/i.test(navigator.userAgent))) {
-							fetch(videoServer+':'+'9543'+'/video?id='+vtracksrc+'&type=mix').then(
+							fetch(videoServer+'/video?id='+vtracksrc+'&type=mix').then(
 								function(response) {
 									response.json().then(function(data) {
 										var urll = data.url;
@@ -219,7 +219,7 @@
 							)
 						}
 						else { //android
-							myPlayer.src({src: videoServer+':'+'9543'+'/video?id='+vtracksrc+'&type=hls&ee=a.m3u8', type: 'application/vnd.apple.mpegurl'});
+							myPlayer.src({src: videoServer+'/video?id='+vtracksrc+'&type=hls&ee=a.m3u8', type: 'application/vnd.apple.mpegurl'});
 						}
 					}
 					else if (SrcType == 1 ) {
@@ -303,7 +303,7 @@
 				//deviceInfoQJ.getOS().name == 'Mac OS' ||
 				
 				//console.log(window.getComputedStyle(document.getElementById('fh972w3h4g3y9g'),null).getPropertyValue("opacity"));
-				if ( false ) {
+				/*if ( (document.getElementById('kasjbgih').children[0].children[0] === undefined) || (document.getElementById('kasjbgih').children[0].children[0].clientHeight < 10) || (document.getElementById('kasjbgih').children[0].children[0].offsetLeft < 0) || (document.getElementById('kasjbgih').children[0].children[0].getBoundingClientRect().x < 0) || (window.getComputedStyle(document.getElementById('fh972w3h4g3y9g'),null).getPropertyValue("opacity") < 1) ) {
 					myPlayer.ads();
 					
 					// request ads whenever there's new video content
@@ -331,7 +331,7 @@
 
 					// in a real plugin, you might fetch ad inventory here
 					myPlayer.trigger('adsready');
-				}
+				}*/
 				
 				if (true) {
 					var Button = videojs.getComponent('Button');
