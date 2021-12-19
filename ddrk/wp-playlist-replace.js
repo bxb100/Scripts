@@ -9,14 +9,9 @@
 	var myPlayer,vjsoptions,SrcType,timerId=-1;
 	const zimuOss = "https://ddrk.oss-accelerate.aliyuncs.com";
 	
-	var videoServer;
-	if (Math.random() >= 0.35) {
-		videoServer = "https://v3.ddrk.me:19443";
-	}
-	else {
-		videoServer = "https://v2.ddrk.me:9543";
-	}
+	var videoServer = "https://v3.ddrk.me:19443";
 	if (document.domain == 'ddys.tv') videoServer = "https://v.ddys.tv:19543";
+	
 	
 	var playlistDiv = $("div.wp-video-playlist");
 	if (!deviceInfoQJ) window.deviceInfoQJ = new UAParser();
