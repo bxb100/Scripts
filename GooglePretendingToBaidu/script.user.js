@@ -213,10 +213,12 @@ async function startFunction() {
 }
 
 if( document.readyState !== 'loading' ) {
-    console.log( 'document is already ready' );
-    await startFunction();
+    async () => {
+        console.log( 'document is already ready' );
+        await startFunction();
+    }
 } else {
-    document.addEventListener('DOMContentLoaded',async function () {
+    document.addEventListener('DOMContentLoaded', async function () {
         console.log( 'document was not ready' );
         await startFunction();
     });
