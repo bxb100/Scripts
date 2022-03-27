@@ -2,7 +2,7 @@
 // @name 把Google搜索伪装成百度搜索
 // @namespace com.pers.scripts
 // @source https://github.com/bxb100/Scripts/blob/main/GooglePretendingToBaidu/script.user.js
-// @version 1.0.5
+// @version 1.0.6
 // @description 用Google搜索,很多人看到屏幕后会问你怎么上Google的.所以当我们把Google的logo换成百度,他们就不会问那么多问题了!
 // @author Johnbi
 // @author somereason
@@ -71,11 +71,6 @@ function getSearchPageLogo() {
  */
 function getImgSize(elLogo) {
     let elImg = elLogo.querySelector('img');
-    try {
-        elImg.visibility = 'hidden';
-    } catch (e) {
-        console.error('img src delete failed. ' + e);
-    }
     if (elImg === null) {
         return { height: 30, width: 92 };
     } else {
@@ -90,14 +85,16 @@ function replaceLogo() {
     try {
         let logo = getSearchPageLogo();
         const imgSize = getImgSize(logo);
-        const topLogoImgData = constant.searchLogo;
+
         logo.className += ' F1hUFe';
         logo.title = '百度首页';
-        logo.innerHTML = `<a href="https://www.google.com" data-hveid="7"><img src="${topLogoImgData}" alt="Baidu" data-atf="3" height="${imgSize.height}px" width="${imgSize.width}px"></a>`;
+        logo.innerHTML = `<a href="https://www.google.com" data-hveid="7"><img src="${constant.searchLogo}" alt="Baidu" data-atf="3" height="${imgSize.height}px" width="${imgSize.width}px"></a>`;
+        return true;
     } catch (e) {
         // logo获取失败
         console.error('oops,google又改样式了.请静待更新', e);
     }
+    return false;
 }
 
 function replaceFavicon() {
@@ -114,114 +111,93 @@ function isSearchPage() {
 
 // >>> Body Ready modify >>>
 
-function replaceTexture() {
+function searchPage() {
+    //伪装搜索结果页面logo
+    replaceLogo();
+    //支持繁体,谢谢david082321提醒
+    document.title = document.title.replace(/\s-\sGoogle\s(搜[索尋]|Search)/g, ' - 百度搜索');
 
-    //伪装favicon
-    replaceFavicon();
-
-    //搜索页
-    if (isSearchPage()) {
-        //伪装搜索结果页面logo
-        replaceLogo();
-        //支持繁体,谢谢david082321提醒
-        document.title = document.title.replace(/\s-\sGoogle\s(搜[索尋]|Search)/g, ' - 百度搜索');
-    }
-    //首页
-    else {
-        // let bannerLogo = document.querySelector("body>div>div:nth-child(2) img");
-        let bannerLogo = document.querySelector('[alt=Google]');
-        if (bannerLogo && bannerLogo.title.length === 0) {
-            bannerLogo.src = '';
-            constant.doodle = false;
-        }
-        const bLogoImage = constant.homeLogo;
-        // 如果首页包含 doodles 那么就不去替换
-        if (bannerLogo && !constant.doodle) {
-            // 百度图片 base64
-            bannerLogo.src = bLogoImage;
-            bannerLogo.removeAttribute('srcset');
-            bannerLogo.width = 270;
-            bannerLogo.height = 129;
-            bannerLogo.style = 'max-height: 130px !important;';
-            //修改 padding top 的设置方式,改为原值-20px.避免硬性设置.造成不同浏览器下位置错乱.
-            let paddingTop = bannerLogo.style.paddingTop.replace('px', '');
-            let paddingTopInt = parseInt(paddingTop);
-            bannerLogo.style.paddingTop = paddingTopInt - 30 + 'px';
-        }
-
-        let searchBtn = document.getElementsByName('btnK');
-        for (let i = 0; i < searchBtn.length; i++) {
-            console.log(searchBtn[i].value);
-            searchBtn[i].value = searchBtn[i].value.replace(/Google\s=?(.+)/, (match, p1) => (p1 === 'Search' ? 'Baidu ' : '百度') + p1);
-        }
-
-        document.title = document.title.replace(/Google/g, '百度一下，你就知道');
-        //按钮下语言切换的提示 arnes 提供
-        const footnote = document.getElementById('SIvCob');
-        if (footnote) {
-            footnote.innerHTML = footnote.innerHTML.replace(/Google/g, 'Baidu');
-        }
-        // setting 替换
-        const footerDiv = document.querySelector('body>div>div:last-child');
-        // 国家地区显示隐藏
-        const region = footerDiv.querySelector('div');
-        if (!!!region.getAttribute('jscontroller') && region.nextElementSibling) {
-            region.remove();
-        }
-        let settingNodes = footerDiv.getElementsByTagName('a');
-        if (settingNodes) {
-            for (let i = 0; i < settingNodes.length; i++) {
-                settingNodes[i].innerHTML = settingNodes[i].innerHTML.replace(/Google/g, 'Baidu');
+    new Promise(() => {
+        //下面的翻页改成百度的脚丫子
+        const navTabSpans = document.getElementsByClassName('SJajHc');
+        const navBdImageUrl = constant.footNav;
+        for (let i = 0; i < navTabSpans.length; i++) {
+            navTabSpans[i].style.width = '22px';
+            if (i === 0) {
+                // 开始的大G
+                navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat 0px 0px`;
+            } else if (i === navTabSpans.length - 1) {
+                // 最后的 gle 去除
+                navTabSpans[i]?.remove();
+            } else if (navTabSpans[i].classList.contains('NVbCr')) {
+                // 变灰色的导航页
+                navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat -144px -288px`;
+            } else {
+                // 当前导航页
+                navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat -96px -288px`;
             }
+        }
+    })
+}
+
+function homePage() {
+    // let bannerLogo = document.querySelector("body>div>div:nth-child(2) img");
+    let bannerLogo = document.querySelector('[alt=Google]');
+    if (bannerLogo && bannerLogo.title.length === 0) {
+        bannerLogo.src = '';
+        constant.doodle = false;
+    }
+    const bLogoImage = constant.homeLogo;
+    // 如果首页包含 doodles 那么就不去替换
+    if (bannerLogo && !constant.doodle) {
+        // 百度图片 base64
+        bannerLogo.src = bLogoImage;
+        bannerLogo.removeAttribute('srcset');
+        bannerLogo.width = 270;
+        bannerLogo.height = 129;
+        bannerLogo.style = 'max-height: 130px !important;';
+        //修改 padding top 的设置方式,改为原值-20px.避免硬性设置.造成不同浏览器下位置错乱.
+        let paddingTop = bannerLogo.style.paddingTop.replace('px', '');
+        let paddingTopInt = parseInt(paddingTop);
+        bannerLogo.style.paddingTop = paddingTopInt - 30 + 'px';
+    }
+
+    let searchBtn = document.getElementsByName('btnK');
+    for (let i = 0; i < searchBtn.length; i++) {
+        console.log(searchBtn[i].value);
+        searchBtn[i].value = searchBtn[i].value.replace(/Google\s=?(.+)/, (match, p1) => (p1 === 'Search' ? 'Baidu ' : '百度') + p1);
+    }
+
+    document.title = document.title.replace(/Google/g, '百度一下，你就知道');
+    //按钮下语言切换的提示 arnes 提供
+    const footnote = document.getElementById('SIvCob');
+    if (footnote) {
+        footnote.innerHTML = footnote.innerHTML.replace(/Google/g, 'Baidu');
+    }
+    // setting 替换
+    const footerDiv = document.querySelector('body>div>div:last-child');
+    // 国家地区显示隐藏
+    const region = footerDiv.querySelector('div');
+    if (!!!region.getAttribute('jscontroller') && region.nextElementSibling) {
+        region.remove();
+    }
+    let settingNodes = footerDiv.getElementsByTagName('a');
+    if (settingNodes) {
+        for (let i = 0; i < settingNodes.length; i++) {
+            settingNodes[i].innerHTML = settingNodes[i].innerHTML.replace(/Google/g, 'Baidu');
         }
     }
 }
 
 // <<< Body Ready modify <<<
 
-// >>> DOM 加载后的一些修改操作 >>>
-
-async function startFunction() {
+(() => {
+     //伪装favicon
+    replaceFavicon();
     // console.log("constant setting:", constant)
-    const first = new Promise(() => {
-        if (isSearchPage()) {
-            //下面的翻页改成百度的脚丫子
-            const navTabSpans = document.getElementsByClassName('SJajHc');
-            const navBdImageUrl = constant.footNav;
-            for (let i = 0; i < navTabSpans.length; i++) {
-                navTabSpans[i].style.width = '22px';
-                if (i === 0) {
-                    // 开始的大G
-                    navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat 0px 0px`;
-                } else if (i === navTabSpans.length - 1) {
-                    // 最后的 gle 去除
-                    navTabSpans[i]?.remove();
-                } else if (navTabSpans[i].classList.contains('NVbCr')) {
-                    // 变灰色的导航页
-                    navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat -144px -288px`;
-                } else {
-                    // 当前导航页
-                    navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat -96px -288px`;
-                }
-            }
-        }
-    })
-
-    const second = new Promise(() => {replaceTexture()})
-
-    await Promise.all([first, second])
-}
-
-if( document.readyState !== 'loading' ) {
-    async () => {
-        console.log( 'document is already ready' );
-        await startFunction();
+    if (isSearchPage()) {
+        searchPage();
+    } else {
+        homePage();
     }
-} else {
-    document.addEventListener('DOMContentLoaded', async function () {
-        console.log( 'document was not ready' );
-        await startFunction();
-    });
-}
-
-// <<< DOM 加载后的一些修改操作 <<<
+})()
