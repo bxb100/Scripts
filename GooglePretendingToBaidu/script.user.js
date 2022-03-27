@@ -2,7 +2,7 @@
 // @name 把Google搜索伪装成百度搜索
 // @namespace com.pers.scripts
 // @source https://github.com/bxb100/Scripts/blob/main/GooglePretendingToBaidu/script.user.js
-// @version 1.0.6
+// @version 1.0.7
 // @description 用Google搜索,很多人看到屏幕后会问你怎么上Google的.所以当我们把Google的logo换成百度,他们就不会问那么多问题了!
 // @author Johnbi
 // @author somereason
@@ -116,28 +116,6 @@ function searchPage() {
     replaceLogo();
     //支持繁体,谢谢david082321提醒
     document.title = document.title.replace(/\s-\sGoogle\s(搜[索尋]|Search)/g, ' - 百度搜索');
-
-    new Promise(() => {
-        //下面的翻页改成百度的脚丫子
-        const navTabSpans = document.getElementsByClassName('SJajHc');
-        const navBdImageUrl = constant.footNav;
-        for (let i = 0; i < navTabSpans.length; i++) {
-            navTabSpans[i].style.width = '22px';
-            if (i === 0) {
-                // 开始的大G
-                navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat 0px 0px`;
-            } else if (i === navTabSpans.length - 1) {
-                // 最后的 gle 去除
-                navTabSpans[i]?.remove();
-            } else if (navTabSpans[i].classList.contains('NVbCr')) {
-                // 变灰色的导航页
-                navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat -144px -288px`;
-            } else {
-                // 当前导航页
-                navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat -96px -288px`;
-            }
-        }
-    })
 }
 
 function homePage() {
@@ -192,7 +170,7 @@ function homePage() {
 // <<< Body Ready modify <<<
 
 (() => {
-     //伪装favicon
+    //伪装favicon
     replaceFavicon();
     // console.log("constant setting:", constant)
     if (isSearchPage()) {
@@ -201,3 +179,28 @@ function homePage() {
         homePage();
     }
 })()
+
+let init = false;
+document.addEventListener('DOMContentLoaded', (event) => {
+    if (isSearchPage() && !init) {
+        init = true;
+        //下面的翻页改成百度的脚丫子
+        const navTabSpans = document.getElementsByClassName('SJajHc');
+        const navBdImageUrl = constant.footNav;
+        for (let i = 0; i < navTabSpans.length; i++) {
+            navTabSpans[i].style.width = '22px';
+            if (i === 0) {
+                // 开始的大G
+                navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat 0px 0px`;
+            } else if (i === navTabSpans.length - 1) {
+                // 最后的 gle 去除
+                navTabSpans[i]?.remove();
+            } else if (navTabSpans[i].classList.contains('NVbCr')) {
+                // 变灰色的导航页
+                navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat -144px -288px`;
+            } else {
+                // 当前导航页
+                navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat -96px -288px`;
+            }
+        }}
+});
