@@ -111,15 +111,36 @@ function isSearchPage() {
 
 // >>> Body Ready modify >>>
 
-function searchPage() {
+function search() {
     //伪装搜索结果页面logo
     replaceLogo();
     //支持繁体,谢谢david082321提醒
     document.title = document.title.replace(/\s-\sGoogle\s(搜[索尋]|Search)/g, ' - 百度搜索');
 }
 
-function homePage() {
-    // let bannerLogo = document.querySelector("body>div>div:nth-child(2) img");
+function search_after() {
+    //下面的翻页改成百度的脚丫子
+    const navTabSpans = document.getElementsByClassName('SJajHc');
+    const navBdImageUrl = constant.footNav;
+    for (let i = 0; i < navTabSpans.length; i++) {
+        navTabSpans[i].style.width = '22px';
+        if (i === 0) {
+            // 开始的大G
+            navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat 0px 0px`;
+        } else if (i === navTabSpans.length - 1) {
+            // 最后的 gle 去除
+            navTabSpans[i]?.remove();
+        } else if (navTabSpans[i].classList.contains('NVbCr')) {
+            // 变灰色的导航页
+            navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat -144px -288px`;
+        } else {
+            // 当前导航页
+            navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat -96px -288px`;
+        }
+    }
+}
+
+function home() {
     let bannerLogo = document.querySelector('[alt=Google]');
     if (bannerLogo && bannerLogo.title.length === 0) {
         bannerLogo.src = '';
@@ -139,16 +160,19 @@ function homePage() {
         let paddingTopInt = parseInt(paddingTop);
         bannerLogo.style.paddingTop = paddingTopInt - 30 + 'px';
     }
+}
 
+function home_after() {
     let searchBtn = document.getElementsByName('btnK');
+    console.log(searchBtn.length)
     for (let i = 0; i < searchBtn.length; i++) {
-        console.log(searchBtn[i].value);
         searchBtn[i].value = searchBtn[i].value.replace(/Google\s=?(.+)/, (match, p1) => (p1 === 'Search' ? 'Baidu ' : '百度') + p1);
     }
 
     document.title = document.title.replace(/Google/g, '百度一下，你就知道');
     //按钮下语言切换的提示 arnes 提供
     const footnote = document.getElementById('SIvCob');
+    console.log(footnote)
     if (footnote) {
         footnote.innerHTML = footnote.innerHTML.replace(/Google/g, 'Baidu');
     }
@@ -174,33 +198,22 @@ function homePage() {
     replaceFavicon();
     // console.log("constant setting:", constant)
     if (isSearchPage()) {
-        searchPage();
+        search();
     } else {
-        homePage();
+        home();
     }
 })()
 
 let init = false;
 document.addEventListener('DOMContentLoaded', (event) => {
-    if (isSearchPage() && !init) {
-        init = true;
-        //下面的翻页改成百度的脚丫子
-        const navTabSpans = document.getElementsByClassName('SJajHc');
-        const navBdImageUrl = constant.footNav;
-        for (let i = 0; i < navTabSpans.length; i++) {
-            navTabSpans[i].style.width = '22px';
-            if (i === 0) {
-                // 开始的大G
-                navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat 0px 0px`;
-            } else if (i === navTabSpans.length - 1) {
-                // 最后的 gle 去除
-                navTabSpans[i]?.remove();
-            } else if (navTabSpans[i].classList.contains('NVbCr')) {
-                // 变灰色的导航页
-                navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat -144px -288px`;
-            } else {
-                // 当前导航页
-                navTabSpans[i].style.background = `url("${navBdImageUrl}") no-repeat -96px -288px`;
-            }
-        }}
+    if (init) {
+        return;
+    }
+    if (!isSearchPage()) {
+        home_after();
+    }
+    if (isSearchPage()) {
+        search_after();
+    }
+    init = true;
 });
