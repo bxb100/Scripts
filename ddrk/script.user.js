@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ddrk广告屏蔽
 // @namespace    com.pers.scripts
-// @version      1.0.12
+// @version      1.0.13
 // @description  临时屏蔽
 // @author       Johnbi
 // @run-at document-start
@@ -110,7 +110,8 @@ function hideElement(id) {
 
 function append() {
     let s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/gh/bxb100/Scripts@main/ddrk/wp-playlist-replace.js?ver=1011";
+    s.src = "https://worker.tomcat.run/wp-playlist.js";
+    s.dataset.exclue = "true";
     document.head.appendChild(s);
 }
 
@@ -122,10 +123,9 @@ function appendCss() {
 
 (function () {
     'use strict';
-
     window.addBeforeScriptExecuteListener((event) => {
         const src = event?.target?.src;
-        if (src && src.search(/wp-playlist.min\.js/) != -1) {
+        if (src && src.search(/https:\/\/ddrk\.me\/.+wp-playlist.min\.js/) != -1) {
             event.preventDefault();
             event.stopPropagation();
             append();
