@@ -167,8 +167,8 @@
 				let srvdate = new Date($.ajax({async: false}).getResponseHeader("Date"));
 				let eTimes = srvdate.getTime() + 600000;
 				let uTxt = CryptoJS.enc.Utf8.parse("{\"path\":\"" + vtracksrc0 + "\",\"expire\":" + eTimes.toString() + "}");
-				let uKey = CryptoJS.enc.Utf8.parse("aSiu%fi@wEbk.bla");
-				let waiv = CryptoJS.enc.Utf8.parse("9365788671230496");
+				let uKey = CryptoJS.enc.Utf8.parse("Android");
+				let waiv = CryptoJS.enc.Utf8.parse("7606852162450048");
 				var ttestvtrack = CryptoJS.AES.encrypt(uTxt,uKey,{
 					iv: waiv,
 					mode: CryptoJS.mode.CBC
