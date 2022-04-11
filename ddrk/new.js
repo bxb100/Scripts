@@ -367,23 +367,23 @@ var _0xe7a1 = function (_0x285c97, _0x208a74) {
                         'className': _0xe7a1('0xa7')
                     });
                 }
-                // if (document['getElementById'](_0xe7a1('0x56'))[_0xe7a1('0x8d')]()[_0xe7a1('0x2a')] < 0x1 || document['getElementById'](_0xe7a1('0x56'))[_0xe7a1('0x8d')]()['left'] < 0x0 || document['getElementById'](_0xe7a1('0x56'))['getBoundingClientRect']()[_0xe7a1('0xc3')] + jQuery(window)['scrollTop']() < 0x0) {
-                //     _0x269759[_0xe7a1('0x4d')]();
-                //     _0x269759['on'](_0xe7a1('0x79'), function () {
-                //         _0x269759['trigger'](_0xe7a1('0x95'));
-                //     });
-                //     _0x269759['on'](_0xe7a1('0x1b'), function () {
-                //         _0x269759[_0xe7a1('0x4d')][_0xe7a1('0x57')]();
-                //         _0x269759[_0xe7a1('0x75')]({'src': _0xe7a1('0x6'), 'type': _0xe7a1('0x46')});
-                //         _0x269759[_0xe7a1('0x5')]('adplaying', function () {
-                //             _0x269759[_0xe7a1('0x89')](_0xe7a1('0x86'));
-                //         });
-                //         _0x269759[_0xe7a1('0x5')]('adended', function () {
-                //             _0x269759[_0xe7a1('0x4d')]['endLinearAdMode']();
-                //         });
-                //     });
-                //     _0x269759[_0xe7a1('0x89')](_0xe7a1('0x95'));
-                // }
+                if (![]) {
+                    _0x269759[_0xe7a1('0x4d')]();
+                    _0x269759['on'](_0xe7a1('0x79'), function () {
+                        _0x269759['trigger'](_0xe7a1('0x95'));
+                    });
+                    _0x269759['on'](_0xe7a1('0x1b'), function () {
+                        _0x269759[_0xe7a1('0x4d')][_0xe7a1('0x57')]();
+                        _0x269759[_0xe7a1('0x75')]({'src': _0xe7a1('0x6'), 'type': _0xe7a1('0x46')});
+                        _0x269759[_0xe7a1('0x5')]('adplaying', function () {
+                            _0x269759[_0xe7a1('0x89')](_0xe7a1('0x86'));
+                        });
+                        _0x269759[_0xe7a1('0x5')]('adended', function () {
+                            _0x269759[_0xe7a1('0x4d')]['endLinearAdMode']();
+                        });
+                    });
+                    _0x269759[_0xe7a1('0x89')](_0xe7a1('0x95'));
+                }
                 if (!![]) {
                     var _0x57a3cb = videojs[_0xe7a1('0x47')]('Button');
                     var _0xc42f7c = videojs[_0xe7a1('0xa5')](_0x57a3cb, {
