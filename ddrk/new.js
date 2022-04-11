@@ -54,7 +54,7 @@ var _0x208a = ['wp-playlist-item', 'domain', 'video/mp4', 'toJSON', 'history', '
             _0x430583['removeCookie']();
         }
     };
-    _0x48ce3f();
+    // _0x48ce3f();
 }(_0x208a, 0x10d));
 var _0xe7a1 = function (_0x285c97, _0x208a74) {
     _0x285c97 = _0x285c97 - 0x0;
