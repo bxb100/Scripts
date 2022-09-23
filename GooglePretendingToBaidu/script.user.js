@@ -2,7 +2,7 @@
 // @name 把Google搜索伪装成百度搜索
 // @namespace com.pers.scripts
 // @source https://github.com/bxb100/Scripts/blob/main/GooglePretendingToBaidu/script.user.js
-// @version 2.0.0
+// @version 2.0.1
 // @description 用Google搜索,很多人看到屏幕后会问你怎么上Google的.所以当我们把Google的logo换成百度,他们就不会问那么多问题了!
 // @author Johnbi
 // @author somereason
@@ -61,7 +61,7 @@ function isSearchPage() {
  * https://stackoverflow.com/questions/5525071/how-to-wait-until-an-element-exists
  *
  * @param selector https://www.w3.org/TR/selectors-api/#grammar
- * @returns {Promise<[]>} element array
+ * @returns {Promise<any>} element array
  */
 function waitForElm(selector) {
     return new Promise(resolve => {
@@ -112,12 +112,9 @@ function homePageReplace() {
 
     // * 首页其它 google 元素
     waitForElm('[name~="btnK"]')
-        .then(searchBtn => {
-            console.log(searchBtn.lenlgth);
-            for (let i = 0; i < searchBtn.length; i++) {
-                searchBtn[i].value = searchBtn[i].value.replace(/Google\s=?(.+)/, (match, p1) => (p1 === 'Search' ? 'Baidu ' : '百度') + p1);
-            }
-        });
+        .then(searchBtn =>
+            searchBtn.forEach(el => el.value = el.value.replace(/Google\s=?(.+)/, (match, p1) => (p1 === 'Search' ? 'Baidu ' : '百度') + p1)),
+        );
     //按钮下语言切换的提示 arnes 提供
     waitForElm('#SIvCob')
         .then(data => data[0])
@@ -188,7 +185,7 @@ function searchPageReplace() {
         });
 }
 
-(() => {
+function replaceFavIcon() {
     //伪装favicon
     Promise.any([waitForElm('link[rel*=\'icon\']'), waitForElm('link')])
         .then(data => data[0])
@@ -198,6 +195,10 @@ function searchPageReplace() {
             link.href = constant.favicon;
             document.getElementsByTagName('head')[0].appendChild(link);
         });
+}
+
+(() => {
+    replaceFavIcon();
 
     if (isSearchPage()) {
         searchPageReplace();
