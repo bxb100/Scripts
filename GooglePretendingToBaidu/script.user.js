@@ -2,7 +2,7 @@
 // @name 把Google搜索伪装成百度搜索
 // @namespace com.pers.scripts
 // @source https://github.com/bxb100/Scripts/blob/main/GooglePretendingToBaidu/script.user.js
-// @version 2.0.3
+// @version 2.0.4
 // @description 用Google搜索,很多人看到屏幕后会问你怎么上Google的.所以当我们把Google的logo换成百度,他们就不会问那么多问题了!
 // @author Johnbi
 // @author somereason
@@ -61,16 +61,17 @@ function getImgSize(elLogo) {
  * https://stackoverflow.com/questions/5525071/how-to-wait-until-an-element-exists
  *
  * @param selector https://www.w3.org/TR/selectors-api/#grammar
+ * @param minimumNode limit search stop condition
  * @returns {Promise<[HTMLElement]>} element array
  */
-function waitForElm(selector) {
+function waitForElm(selector, minimumNode = 1) {
 	return new Promise(resolve => {
-		if (document.querySelectorAll(selector).length) {
+		if (document.querySelectorAll(selector).length >= minimumNode) {
 			return resolve(document.querySelectorAll(selector));
 		}
 
 		const observer = new MutationObserver(_ => {
-			if (document.querySelectorAll(selector).length) {
+			if (document.querySelectorAll(selector).length >= minimumNode) {
 				resolve(document.querySelectorAll(selector));
 				observer.disconnect();
 			}
@@ -119,9 +120,9 @@ function homePageReplace() {
 		});
 
 	// * 首页其它 google 元素
-	waitForElm('[name~="btnK"]')
+	waitForElm('[name~="btnK"]', 2)
 		.then(searchBtn =>
-			searchBtn.forEach(el => el.value = el.value.replace(/Google\s=?(.+)/, (match, p1) => (p1 === 'Search' ? 'Baidu ' : '百度') + p1)),
+			searchBtn.forEach(el => { el.value = el.value.replace(/Google\s=?(.+)/, (match, p1) => (p1 === 'Search' ? 'Baidu ' : '百度') + p1) })
 		);
 	//按钮下语言切换的提示 arnes 提供
 	waitForElm('#SIvCob')
