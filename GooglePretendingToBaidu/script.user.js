@@ -2,7 +2,7 @@
 // @name 把Google搜索伪装成百度搜索
 // @namespace com.pers.scripts
 // @source https://github.com/bxb100/Scripts/blob/main/GooglePretendingToBaidu/script.user.js
-// @version 2.0.4
+// @version 2.0.5
 // @description 用Google搜索,很多人看到屏幕后会问你怎么上Google的.所以当我们把Google的logo换成百度,他们就不会问那么多问题了!
 // @author Johnbi
 // @author somereason
@@ -171,7 +171,8 @@ function searchPageReplace() {
 	document.title = document.title.replace(/\s-\sGoogle\s(搜[索尋]|Search)/g, ' - 百度搜索');
 
 	//下面的翻页改成百度的脚丫子
-	waitForElm('.SJajHc')
+	// 至少有两个, 一个雪碧图一个 page 1
+	waitForElm('.SJajHc', 2)
 		.then(navTabSpans => {
 			const navBdImageUrl = constant.footNav;
 			navTabSpans.forEach((item, i) => {
