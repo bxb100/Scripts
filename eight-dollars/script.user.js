@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         eight-dollars
-// @version      0.1
+// @version      0.2
 // @description  Shows twitter blue vs real verified users
 // @author       Made by Will Seagar and Walter Lim.
 // @author       John Bi
@@ -18,6 +18,110 @@ const TEXT_VERIFIED_LABEL = "Verified";
 const TEXT_TWITTER_BLUE_LABEL = "Paid";
 const TEXT_ENABLE_BORDER = false;
 
+const VERIFIED_ACCOUNT_ARIA_LABEL_I18N = {
+  'ar-x-fm': 'حساب موَثَّق',
+  ar: 'حساب موَثَّق',
+  bg: 'Потвърден профил',
+  bn: 'যাচাইকৃত অ্যাকাউন্ট',
+  ca: 'Compte verificat',
+  cs: 'Ověřený účet',
+  da: 'Verificeret konto',
+  de: 'Verifizierter Account',
+  el: 'Επαληθευμένος λογαριασμός',
+  'en-gb': 'Verified account',
+  en: 'Verified account',
+  es: 'Cuenta verificada',
+  eu: 'Egiaztatutako kontua',
+  fa: 'حساب تاییدشده',
+  fi: 'Varmennettu tili',
+  fil: 'Beripikadong account',
+  fr: 'Compte certifié',
+  ga: 'Cuntas deimhnithe',
+  gl: 'Conta verificada',
+  gu: 'ચકાસાયેલું એકાઉન્ટ',
+  he: 'חשבון מאומת',
+  hi: 'सत्यापित खाता',
+  hr: 'Potvrđeni račun',
+  hu: 'Hitelesített felhasználó',
+  id: 'Akun terverifikasi',
+  it: 'Account verificato',
+  ja: '認証済みアカウント',
+  kn: 'ಪರಿಶೀಲಿಸಿದ ಖಾತೆ',
+  ko: '인증된 계정',
+  mr: 'खाते सत्यापित केले',
+  ms: 'Akaun Disahkan',
+  nb: 'Verifisert konto',
+  nl: 'Geverifieerd account',
+  pl: 'Zweryfikowane konto',
+  pt: 'Conta verificada',
+  ro: 'Cont verificat',
+  ru: 'Подлинная учетная запись',
+  sk: 'Overený účet',
+  sr: 'Потврђен налог',
+  sv: 'Verifierat konto',
+  ta: 'சரிபார்க்கப்பட்ட கணக்கு',
+  th: 'บัญชีที่ยืนยันแล้ว',
+  tr: 'Onaylanmış hesap',
+  uk: 'Підтверджений профіль',
+  ur: 'تصدیق شدہ اکاؤنٹ',
+  vi: 'Tài khoản đã xác nhận',
+  'zh-hant': '已認證的帳戶',
+  zh: '认证账号'
+}
+const PROVIDES_DETAILS_ARIA_LABEL_I18N = {
+  'ar-x-fm': 'لتوفير تفاصيل حول الحسابات الموثّقة.',
+  ar: 'لتوفير تفاصيل حول الحسابات الموثّقة.',
+  bg: 'Дава подробности за потвърдените профили.',
+  bn: 'যাচাই করা অ্যাকাউন্ট সম্পর্কে বিশদ বিবরণ দিন।',
+  ca: 'Proporciona informació sobre els comptes verificats.',
+  cs: 'Poskytuje podrobnosti o ověřených účtech.',
+  da: 'Giver oplysninger om verificerede konti.',
+  de: 'Gibt Details über verifizierte Accounts an.',
+  el: 'Παρέχει λεπτομέρειες σχετικά με τους επαληθευμένους λογαριασμούς.',
+  'en-gb': 'Provides details about verified accounts.',
+  en: 'Provides details about verified accounts.',
+  es: 'Proporciona detalles sobre las cuentas verificadas.',
+  eu: 'Egiaztatutako kontuei buruzko xehetasunak ematen ditu.',
+  fa: 'جزئیاتی درباره حساب‌های کاربری تأییدشده ارائه می‌دهد.',
+  fi: 'Tarkempia tietoja varmennetuista tileistä.',
+  fil: 'Nagbibigay ng mga detalye tungkol sa mga beripikadong account.',
+  fr: 'Donne des détails sur les comptes certifiés.',
+  ga: 'Soláthraítear sonraí maidir le cuntais dheimhnithe.',
+  gl: 'Fornece detalles sobre contas verificadas.',
+  gu: 'ચકાસાયેલ એકાઉન્ટ વિષે વિગતો આપે છે.',
+  he: 'מידע לגבי חשבונות מאומתים.',
+  hi: 'सत्यापित खातों के विवरण प्रदान करें.',
+  hr: 'Daje podatke o potvrđenim računima.',
+  hu: 'További részletek az ellenőrzött felhasználói fiókokkal kapcsolatban.',
+  id: 'Memberikan detail tentang akun terverifikasi.',
+  it: 'Fornisce dettagli sugli account verificati.',
+  ja: '認証済みアカウントについての詳細が表示されます。',
+  kn: 'ಪರಿಶೀಲಿಸಿದ ಖಾತೆಗಳ ಬಗ್ಗೆ ವಿವರಗಳನ್ನು ಒದಗಿಸುತ್ತದೆ.',
+  ko: '인증된 계정에 대한 세부 정보를 제공합니다.',
+  mr: 'सत्यापित खात्यांविषयी तपशील दिला जातो.',
+  ms: 'Menyediakan butiran tentang akaun disahkan.',
+  nb: 'Gir detaljert informasjon om verifiserte kontoer.',
+  nl: 'Verstrekt informatie over geverifieerde accounts.',
+  pl: 'Więcej informacji na temat weryfikacji kont.',
+  pt: 'Dá detalhes sobre contas verificadas.',
+  ro: 'Oferă detalii despre conturile verificate.',
+  ru: 'Объясняет, что такое подлинные учетные записи.',
+  sk: 'Poskytne podrobnosti o overených účtoch.',
+  sr: 'Наводи детаље о потврђеним налозима.',
+  sv: 'Ger information om verifierade konton.',
+  ta: 'சரிபார்க்கப்பட்ட கணக்குகள் பற்றிய விவரங்களை வழங்குகிறது.',
+  th: 'ระบุรายละเอียดเกี่ยวกับบัญชีที่ยืนยันแล้ว',
+  tr: 'Onaylanmış hesaplar hakkında ayrıntılı bilgi verir.',
+  uk: 'Надає відомості про підтверджені профілі.',
+  ur: 'تصدیق شدہ اکاؤنٹس کے متعلق تفصیلات فراہم کریں۔',
+  vi: 'Cung cấp thông tin chi tiết về tài khoản đã xác minh.',
+  'zh-hant': '提供已認證帳戶的詳細資料。',
+  zh: '提供已验证账号的详细信息。'
+}
+
+const lang = document.documentElement.lang.toLowerCase()
+const VERIFIED_ACCOUNT_ARIA_LABEL = VERIFIED_ACCOUNT_ARIA_LABEL_I18N[lang] || VERIFIED_ACCOUNT_ARIA_LABEL_I18N.en
+const PROVIDES_DETAILS_ARIA_LABEL = PROVIDES_DETAILS_ARIA_LABEL_I18N[lang] || PROVIDES_DETAILS_ARIA_LABEL_I18N.en
 
 const COMIC_SANS_BLUE_DOLLAR_SVG = (isAriaLabel) => `<svg ${isAriaLabel ? 'aria-label="Verified account"' : ''} width="24" height="24" viewBox="0 0 24 24" data-eight-dollars-status="blueVerified" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M22.25 12C22.25 10.57 21.37 9.33 20.06 8.66C20.52 7.27 20.26 5.76 19.25 4.75C18.24 3.74 16.73 3.48 15.34 3.94C14.68 2.63 13.43 1.75 12 1.75C10.57 1.75 9.33 2.63 8.67 3.94C7.27 3.48 5.76 3.74 4.75 4.75C3.74 5.76 3.49 7.27 3.95 8.66C2.64 9.33 1.75 10.57 1.75 12C1.75 13.43 2.64 14.67 3.95 15.34C3.49 16.73 3.74 18.24 4.75 19.25C5.76 20.26 7.27 20.51 8.66 20.06C9.33 21.37 10.57 22.25 12 22.25C13.43 22.25 14.68 21.37 15.34 20.06C16.73 20.51 18.24 20.26 19.25 19.25C20.26 18.24 20.52 16.73 20.06 15.34C21.37 14.67 22.25 13.43 22.25 12Z" fill="#1D9BF0"/>
@@ -91,8 +195,8 @@ function changeBlueVerified(elm, isSmall) {
   }
 }
 
-const BLUE_CHECK_PATTERN_NEW = '[aria-label="Verified account"],[aria-label="认证账号"]'
-const BLUE_CHECK_PATTERN_PROVIDE_DETAILS = '[aria-label="Provides details about verified accounts."],[aria-label="提供已验证账号的详细信息。"]'
+const BLUE_CHECK_PATTERN_NEW = `[aria-label="${VERIFIED_ACCOUNT_ARIA_LABEL}"]`
+const BLUE_CHECK_PATTERN_PROVIDE_DETAILS = `[aria-label="${PROVIDES_DETAILS_ARIA_LABEL}"]`
 
 function querySelectorAllIncludingMe(node, selector) {
     if (node.matches(selector)) {
