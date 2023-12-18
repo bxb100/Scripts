@@ -30,7 +30,6 @@ host-keyword,zxzj,DIRECT
 host-wildcard, dl*.mypikpak.com, DIRECT
 
 # >> SyncnextProxy
-host-suffix,mypikpak.com,PROXY
 host-suffix,v1.mk,PROXY
 host,notion-api.splitbee.io,PROXY
 host-suffix,themoviedb.org,PROXY
