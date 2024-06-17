@@ -57,3 +57,6 @@ host, static.mypikpak.com, proxy
 host, sg-thumbnail-drive.mypikpak.com, proxy
 # host-wildcard, dl*.mypikpak.com, direct
 host, mypikpak.com, proxy
+
+# other
+host-suffix,heimuer.tv,DIRECT
