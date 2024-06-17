@@ -55,5 +55,5 @@ host, api-drive.mypikpak.com, proxy
 host, config.mypikpak.com, proxy
 host, static.mypikpak.com, proxy
 host, sg-thumbnail-drive.mypikpak.com, proxy
-host-wildcard, dl*.mypikpak.com, direct
+# host-wildcard, dl*.mypikpak.com, direct
 host, mypikpak.com, proxy
