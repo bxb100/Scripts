@@ -61,3 +61,13 @@ host, mypikpak.com, proxy
 # other
 host-suffix,heimuer.tv,DIRECT
 host-suffix,heimuer.pro,DIRECT
+
+# pixman.io
+host-suffix,dnsany.com,DIRECT
+host-suffix,cmvideo.cn,DIRECT
+host-suffix,chinamobile.com,DIRECT
+host-suffix,mobaibox.com,DIRECT
+host-suffix,gitv.tv,DIRECT
+host-suffix,cctv.cn,DIRECT
+host-suffix,yangshipin.cn,DIRECT
+IP-CIDR,183.206.0.0/15,DIRECT
