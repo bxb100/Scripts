@@ -48,17 +48,8 @@ host-suffix,picsum.photos,PROXY
 host-suffix,ibb.co,PROXY
 host-suffix,kin6c1.com,PROXY
 
-# Pikpak
-host, res-etl-ssl.mypikpak.com, proxy
-host, user.mypikpak.com, proxy
-host, api-drive.mypikpak.com, proxy
-host, config.mypikpak.com, proxy
-host, static.mypikpak.com, proxy
-host, sg-thumbnail-drive.mypikpak.com, proxy
-# host-wildcard, dl*.mypikpak.com, direct
-host, mypikpak.com, proxy
-
-# other
+# heimuer
+host-keyword,ts.com,DIRECT
 host-suffix,heimuer.tv,DIRECT
 host-suffix,heimuer.pro,DIRECT
 
