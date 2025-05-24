@@ -80,3 +80,4 @@ DOMAIN-SUFFIX,groq.com
 DOMAIN,jules.google.com
 DOMAIN-SUFFIX,withgoogle.com
 DOMAIN,aida.googleapis.com
+DOMAIN-SUFFIX,appspot.com
