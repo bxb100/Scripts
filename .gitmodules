@@ -1,0 +1,3 @@
+[submodule "private-script"]
+	path = private-script
+	url = git@github.com:bxb100/private-script.git
