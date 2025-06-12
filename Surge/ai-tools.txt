@@ -84,3 +84,7 @@ DOMAIN-SUFFIX,appspot.com
 
 # >> Zed
 DOMAIN,llm.zed.dev
+
+# >> DIA
+DOMAIN-SUFFIX,diabrowser.engineering
+
