@@ -88,3 +88,6 @@ DOMAIN,llm.zed.dev
 # >> DIA
 DOMAIN-SUFFIX,diabrowser.engineering
 
+# >> Jetbrain
+DOMAIN-SUFFIX,jetbrains.ai
+
