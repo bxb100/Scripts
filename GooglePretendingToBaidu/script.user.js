@@ -2,7 +2,7 @@
 // @name 把Google搜索伪装成百度搜索
 // @namespace com.pers.scripts
 // @source https://github.com/bxb100/Scripts/blob/main/GooglePretendingToBaidu/script.user.js
-// @version 2.0.8
+// @version 2.0.9
 // @description 用Google搜索,很多人看到屏幕后会问你怎么上Google的.所以当我们把Google的logo换成百度,他们就不会问那么多问题了!
 // @author Johnbi
 // @author somereason
@@ -96,27 +96,20 @@ function homePageReplace() {
 	// * 标题
 	document.title = document.title.replace(/Google/g, '百度一下，你就知道');
 	// * 图片
-	waitForElm('img[alt=Google]')
+	waitForElm('svg[aria-label=Google]')
 		.first()
 		.then(bannerLogo => {
-			if (bannerLogo && bannerLogo.title.length === 0) {
-				bannerLogo.src = '';
-				constant.doodle = false;
-			}
-			const bLogoImage = constant.homeLogo;
-			// 如果首页包含 doodles 那么就不去替换
-			if (bannerLogo && !constant.doodle) {
-				// 百度图片 base64
-				bannerLogo.src = bLogoImage;
-				bannerLogo.removeAttribute('srcset');
-				bannerLogo.width = 270;
-				bannerLogo.height = 129;
-				bannerLogo.style.setProperty('max-height', '130px', 'important');
-				//修改 padding top 的设置方式,改为原值-20px.避免硬性设置.造成不同浏览器下位置错乱.
-				let paddingTop = bannerLogo.style.paddingTop.replace('px', '');
-				let paddingTopInt = parseInt(paddingTop);
-				bannerLogo.style.paddingTop = paddingTopInt - 30 + 'px';
-			}
+            const img = document.createElement('img');
+            img.src = constant.homeLogo;
+            img.removeAttribute('srcset');
+            img.width = 270;
+            img.height = 129;
+            img.style.setProperty('max-height', '130px', 'important');
+            //修改 padding top 的设置方式,改为原值-20px.避免硬性设置.造成不同浏览器下位置错乱.
+            let paddingTop = bannerLogo.style.paddingTop.replace('px', '');
+            let paddingTopInt = parseInt(paddingTop);
+            img.style.paddingTop = paddingTopInt - 20 + 'px';
+            bannerLogo.parentNode.replaceChild(img, bannerLogo);
 		});
 
 	// * 首页其它 google 元素
