@@ -105,6 +105,11 @@ function homePageReplace() {
             img.width = 270;
             img.height = 129;
             img.style.setProperty('max-height', '130px', 'important');
+			// 修复一下 android 居中问题
+            if (/Android/.test(navigator.userAgent)) {
+                // parent container 160px, img width 270px, so middle is `(270 - 160) / 2 = 55`
+                img.style.marginLeft = '-55px';
+            }
             //修改 padding top 的设置方式,改为原值-20px.避免硬性设置.造成不同浏览器下位置错乱.
             let paddingTop = bannerLogo.style.paddingTop.replace('px', '');
             let paddingTopInt = parseInt(paddingTop);
