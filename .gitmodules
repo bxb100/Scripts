@@ -1,3 +1,4 @@
 [submodule "private-script"]
 	path = private-script
 	url = https://github.com/bxb100/private-script.git
+	branch = main
