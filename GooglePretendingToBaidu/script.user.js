@@ -11,6 +11,7 @@
 // @match *://www.google.com.tw/*
 // @match *://www.google.com/*
 // @match *://www.google.com.hk/*
+// @exclude *://www.google.com/recaptcha/*
 // @grant none
 // @icon https://www.google.com/s2/favicons?sz=64&domain=baidu.com
 // @downloadURL https://update.greasyfork.org/scripts/433454/%E6%8A%8AGoogle%E6%90%9C%E7%B4%A2%E4%BC%AA%E8%A3%85%E6%88%90%E7%99%BE%E5%BA%A6%E6%90%9C%E7%B4%A2.user.js
