@@ -49,6 +49,12 @@ DOMAIN-SUFFIX,generativeai.google
 DOMAIN-SUFFIX,notebooklm.google
 DOMAIN-SUFFIX,notebooklm.google.com
 
+# >> Google antigravity
+DOMAIN,antigravity-unleash.goog
+DOMAIN,lh3.googleusercontent.com
+DOMAIN,daily-cloudcode-pa.sandbox.googleapis.com
+DOMAIN-SUFFIX,us-central1.run.app
+
 # >> POE
 DOMAIN-SUFFIX,poe.com
 
