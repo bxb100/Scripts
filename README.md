@@ -1,8 +1,11 @@
 # Scripts
+ 
+Scripts repository
 
-Tampermonkey scripts repository
+For personal use
 
 ## Resources
 
-1. [Google search page pretending to be Baidu search page](GooglePretendingToBaidu/script.user.js)
-2. [embyLaunchPotplayer](embyLaunchPotplayer)
+- [Google search page pretending to be Baidu search page](GooglePretendingToBaidu/script.user.js)
+- [embyLaunchPotplayer](embyLaunchPotplayer)
+- [banana-prompt-quicker](banana-prompt-quicker)
