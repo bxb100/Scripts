@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             0.0.1
+// @version             0.0.2
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -388,7 +388,7 @@
             this.populateCategoryDropdown(optionsContainer, triggerText)
 
             const buttonsContainer = document.createElement('div')
-            buttonsContainer.style.cssText = `display: flex; gap: 8px; ${mobile ? 'flex: 1; justify-content: flex-end;' : ''}`
+            buttonsContainer.style.cssText = `display: flex; gap: 8px; ${mobile ? 'flex: 1; justify-content: space-between;' : ''}`
 
             const filters = [
                 { key: 'favorite', label: '收藏' },
@@ -686,7 +686,8 @@
 
             if (mobile) {
                 pagination.appendChild(controlsWrapper)
-                pagination.appendChild(socialContainer)
+                const spacer = document.createElement('div')
+                pagination.appendChild(spacer)
             } else {
                 const spacer = document.createElement('div')
                 pagination.appendChild(spacer)
