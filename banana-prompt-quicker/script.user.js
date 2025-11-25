@@ -2,21 +2,20 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             0.0.2
+// @version             0.0.3
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
 // @license             MIT
 // @match               https://aistudio.google.com/*
 // @match               https://gemini.google.com/*
-// @icon                data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍌</text></svg>
+// @icon                https://www.gstatic.com/lamda/images/nano-banana_be0f093e11edd1639655e.svg
 // @grant               GM_getValue
 // @grant               GM_setValue
 // @grant               GM_xmlhttpRequest
 // @grant               GM_addElement
 // @grant               GM_log
 // @connect             raw.githubusercontent.com
-// @require             data:text/plain;base64,d2luZG93LnRlc3RUcnVzdGVkID0gZnVuY3Rpb24oKSB7CmlmICh0eXBlb2Ygd2luZG93ICE9ICJ1bmRlZmluZWQiICYmCiAgICgndHJ1c3RlZFR5cGVzJyBpbiB3aW5kb3cpICYmCiAgICgnY3JlYXRlUG9saWN5JyBpbiB3aW5kb3cudHJ1c3RlZFR5cGVzKSAmJgogICAodHlwZW9mIHdpbmRvdy50cnVzdGVkVHlwZXMuY3JlYXRlUG9saWN5ID09ICJmdW5jdGlvbiIpKSB7Cgl3aW5kb3cudHJ1c3RlZFR5cGVzLmNyZWF0ZVBvbGljeSgnZGVmYXVsdCcsIHtjcmVhdGVTY3JpcHRVUkw6IHMgPT4gcywgY3JlYXRlU2NyaXB0OiBzID0+IHMsIGNyZWF0ZUhUTUw6IHMgPT4gc30pCn0gZWxzZSB7CglzZXRUaW1lb3V0KHdpbmRvdy50ZXN0VHJ1c3RlZCwgMTAwMCk7Cn0KfQp3aW5kb3cudGVzdFRydXN0ZWQoKTs=
 // @source              https://github.com/bxb100/Scripts/tree/main/banana-prompt-quicker
 // @homepage            https://github.com/bxb100/Scripts/tree/main/banana-prompt-quicker
 // @homepageURL         https://github.com/bxb100/Scripts/tree/main/banana-prompt-quicker
@@ -28,6 +27,21 @@
 
 (function () {
     'use strict';
+
+    /*!
+    * by Jan Biniok
+    * source: https://github.com/Tampermonkey/tampermonkey/issues/1334#issuecomment-2442399033
+    */
+    (function () {
+        if (typeof window != "undefined" &&
+            ('trustedTypes' in window) &&
+            ('createPolicy' in window.trustedTypes) &&
+            (typeof window.trustedTypes.createPolicy == "function")) {
+            window.trustedTypes.createPolicy('default', { createScriptURL: s => s, createScript: s => s, createHTML: s => s })
+        } else {
+            setTimeout(window.testTrusted, 1000);
+        }
+    })()
 
     // --- Configuration ---
     // 更新后的 JSON 请求地址
@@ -1148,12 +1162,7 @@
         }
 
         findImageButton() {
-            const icon = document.querySelector('mat-icon[data-mat-icon-name="photo_prints"][fonticon="photo_prints"]')
-            if (icon) {
-                const btn = icon.closest('button.toolbox-drawer-item-deselect-button')
-                return btn
-            }
-            return null
+            return document.querySelector('button.toolbox-drawer-item-deselect-button:has(img[src*="nano-banana"])')
         }
 
         getCurrentTheme() {
