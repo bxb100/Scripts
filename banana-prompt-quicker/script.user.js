@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             0.0.6
+// @version             0.0.7
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -178,12 +178,16 @@
             this.customPrompts = []
             this.categories = new Set(['全部'])
             this.selectedCategory = 'all'
+            this.sortMode = 'recommend' // 'recommend' | 'random'
+            this.loadPrompts()
+            this.loadSortMode()
             this.currentPage = 1
             this.pageSize = this.isMobile() ? 8 : 12
             this.filteredPrompts = []
             this.favorites = []
             this.keyboardHandler = this.handleKeyboard.bind(this)
-            this.loadPrompts()
+            this._isInitialized = false // 用于区分首次显示和重新显示
+            this.randomMap = new Map()
         }
 
         async loadPrompts() {
@@ -204,6 +208,22 @@
 
             this.updateCategoryDropdown()
             this.applyFilters()
+
+            this.ensureRandomValues()
+
+            this.updateCategoryDropdown()
+            // 只在首次加载或有必要时重置页码
+            this.applyFilters(!this._isInitialized)
+        }
+
+        ensureRandomValues() {
+            this.prompts.forEach(p => {
+                const key = `${p.title}-${p.author}`
+                if (!this.randomMap.has(key)) {
+                    this.randomMap.set(key, Math.random())
+                }
+                p._randomVal = this.randomMap.get(key)
+            })
         }
 
         updateCategoryDropdown() {
@@ -271,7 +291,7 @@
 
                     this.populateCategoryDropdown(optionsContainer, triggerText)
 
-                    this.applyFilters()
+                    this.applyFilters(true)
                 }
 
                 optionsContainer.appendChild(option)
@@ -280,6 +300,16 @@
             // Reset trigger text if needed
             const currentLabel = this.selectedCategory === 'all' ? '全部' : this.selectedCategory
             triggerText.textContent = currentLabel
+        }
+
+        async loadSortMode() {
+            const result = await chrome.storage.local.get(['banana-sort-mode'])
+            this.sortMode = result['banana-sort-mode'] || 'recommend'
+        }
+
+        async setSortMode(mode) {
+            this.sortMode = mode
+            await chrome.storage.local.set({ 'banana-sort-mode': mode })
         }
 
         async getCustomPrompts() {
@@ -293,7 +323,18 @@
                 document.body.appendChild(this.modal)
             }
             this.modal.style.display = 'flex'
-            this.loadPrompts() // Reload to ensure updates
+            if (!this._isInitialized) {
+                // 首次显示：完整初始化
+                this.updateCategoryDropdown()
+                this.applyFilters(true)
+                this._isInitialized = true
+            } else {
+                // 重新显示：只刷新数据，保留状态
+                this.loadPrompts().then(() => {
+                    // 刷新当前页面显示（保持在当前页）
+                    this.renderCurrentPage()
+                })
+            }
             // 添加键盘事件监听器
             document.addEventListener('keydown', this.keyboardHandler)
         }
@@ -349,12 +390,16 @@
             const searchSection = document.createElement('div')
             searchSection.style.cssText = `padding: ${mobile ? '16px' : '20px 24px'}; border-bottom: 1px solid ${colors.border}; display: flex; ${mobile ? 'flex-direction: column; gap: 12px;' : 'align-items: center; gap: 16px;'}; overflow: visible; z-index: 100; position: relative;`
 
+            // 搜索框容器
+            const searchContainer = document.createElement('div')
+            searchContainer.style.cssText = `${mobile ? 'width: 100%;' : 'flex: 1;'} display: flex; align-items: center; gap: 8px; position: relative;`
+
             const searchInput = document.createElement('input')
             searchInput.type = 'text'
             searchInput.id = 'prompt-search'
             searchInput.placeholder = '搜索...'
-            searchInput.style.cssText = `${mobile ? 'width: 100%;' : 'flex: 1;'} padding: ${mobile ? '14px 20px' : '12px 18px'}; border: 1px solid ${colors.inputBorder}; border-radius: 16px; outline: none; font-size: ${mobile ? '16px' : '14px'}; background: ${colors.inputBg}; color: ${colors.text}; box-sizing: border-box; transition: all 0.2s;`
-            searchInput.addEventListener('input', () => this.applyFilters())
+            searchInput.style.cssText = `flex: 1; padding: ${mobile ? '14px 20px' : '12px 18px'}; border: 1px solid ${colors.inputBorder}; border-radius: 16px; outline: none; font-size: ${mobile ? '16px' : '14px'}; background: ${colors.inputBg}; color: ${colors.text}; box-sizing: border-box; transition: all 0.2s;`
+            searchInput.addEventListener('input', () => this.applyFilters(true))
 
             searchInput.addEventListener('focus', () => {
                 searchInput.style.borderColor = colors.primary
@@ -363,6 +408,47 @@
                 const currentColors = this.adapter.getThemeColors()
                 searchInput.style.borderColor = currentColors.inputBorder
             })
+
+
+            // Sort Mode Button
+            const sortBtnContainer = document.createElement('div')
+            sortBtnContainer.style.cssText = 'position: relative; display: flex; align-items: center;'
+
+            const sortBtn = document.createElement('button')
+            sortBtn.id = 'sort-mode-btn'
+            const currentModeText = this.sortMode === 'recommend' ? '随机焕新' : '推荐排序'
+            sortBtn.innerHTML = this.sortMode === 'recommend'
+                ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>'
+                : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>'
+            sortBtn.style.cssText = `padding: ${mobile ? '10px' : '8px'}; border: none; background: transparent; color: ${colors.textSecondary}; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; border-radius: 8px;`
+            sortBtn.onclick = () => this.toggleSortMode()
+
+            // Tooltip
+            const tooltip = document.createElement('div')
+            tooltip.id = 'sort-tooltip'
+            tooltip.textContent = `切换${currentModeText}`
+            tooltip.style.cssText = `position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%); background: ${colors.surface}; color: ${colors.text}; padding: 6px 12px; border-radius: 8px; font-size: 12px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s; box-shadow: 0 4px 12px ${colors.shadow}; border: 1px solid ${colors.border}; z-index: 1000;`
+
+            if (!mobile) {
+                sortBtn.onmouseenter = () => {
+                    sortBtn.style.color = colors.primary
+                    sortBtn.style.transform = 'scale(1.1)'
+                    sortBtn.style.background = `${colors.primary}10`
+                    tooltip.style.opacity = '1'
+                }
+                sortBtn.onmouseleave = () => {
+                    sortBtn.style.color = colors.textSecondary
+                    sortBtn.style.transform = 'scale(1)'
+                    sortBtn.style.background = 'transparent'
+                    tooltip.style.opacity = '0'
+                }
+            }
+
+            sortBtnContainer.appendChild(sortBtn)
+            sortBtnContainer.appendChild(tooltip)
+
+            searchContainer.appendChild(searchInput)
+            searchContainer.appendChild(sortBtnContainer)
 
             const filterContainer = document.createElement('div')
             filterContainer.style.cssText = `display: flex; gap: 8px; align-items: center; ${mobile ? 'justify-content: space-between; flex-wrap: wrap;' : ''}; position: relative; z-index: 101;`
@@ -463,7 +549,7 @@
             filterContainer.appendChild(dropdownContainer)
             filterContainer.appendChild(buttonsContainer)
 
-            searchSection.appendChild(searchInput)
+            searchSection.appendChild(searchContainer)
             searchSection.appendChild(filterContainer)
 
             return searchSection
@@ -546,10 +632,36 @@
                 }
             }
 
-            this.applyFilters()
+            this.applyFilters(true)
         }
 
-        async applyFilters() {
+        async toggleSortMode() {
+            const newMode = this.sortMode === 'recommend' ? 'random' : 'recommend'
+            await this.setSortMode(newMode)
+            if (newMode === 'random') {
+                this.randomMap.clear()
+                this.ensureRandomValues()
+            }
+
+            // 更新按钮图标和 tooltip
+            const sortBtn = document.getElementById('sort-mode-btn')
+            const tooltip = document.getElementById('sort-tooltip')
+            if (sortBtn) {
+                const currentModeText = newMode === 'recommend' ? '随机焕新' : '推荐排序'
+                sortBtn.innerHTML = newMode === 'recommend'
+                    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>'
+                    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>'
+
+                if (tooltip) {
+                    tooltip.textContent = `切换${currentModeText}`
+                }
+            }
+
+            // 重新应用过滤和排序
+            this.applyFilters(true)
+        }
+
+        async applyFilters(resetPage = true) {
             const searchInput = document.getElementById('prompt-search')
             const keyword = searchInput ? searchInput.value.toLowerCase() : ''
 
@@ -582,24 +694,47 @@
                 })
             })
 
-            // Sort: Favorites > Custom > Others
-            filtered.sort((a, b) => {
-                const aId = `${a.title}-${a.author}`
-                const bId = `${b.title}-${b.author}`
-                const aIsFavorite = this.favorites.includes(aId)
-                const bIsFavorite = this.favorites.includes(bId)
+            // Sort: Favorites > Custom > Others (根据 sortMode)
+            // 先分组
+            const favoriteItems = []
+            const customItems = []
+            const normalItems = []
 
-                if (aIsFavorite && !bIsFavorite) return -1
-                if (!aIsFavorite && bIsFavorite) return 1
+            filtered.forEach(item => {
+                const itemId = `${item.title}-${item.author}`
+                const isFavorite = this.favorites.includes(itemId)
 
-                if (a.isCustom && !b.isCustom) return -1
-                if (!a.isCustom && b.isCustom) return 1
-
-                return 0
+                if (isFavorite) {
+                    favoriteItems.push(item)
+                } else if (item.isCustom) {
+                    customItems.push(item)
+                } else {
+                    normalItems.push(item)
+                }
             })
 
+            // 普通项根据 sortMode 排序
+            if (this.sortMode === 'random') {
+                normalItems.sort((a, b) => a._randomVal - b._randomVal)
+            }
+            // recommend 模式下保持原顺序
+
+            // 合并：收藏 > 自定义 > 普通
+            filtered = [...favoriteItems, ...customItems, ...normalItems]
+
             this.filteredPrompts = filtered
-            this.currentPage = 1
+
+            // 智能处理页码：只在需要时重置，或者当前页超出范围时调整
+            if (resetPage) {
+                this.currentPage = 1
+            } else {
+                // 确保当前页在有效范围内
+                const totalPages = Math.ceil(this.filteredPrompts.length / this.pageSize)
+                if (this.currentPage > totalPages && totalPages > 0) {
+                    this.currentPage = totalPages
+                }
+            }
+
             this.renderCurrentPage()
         }
 
@@ -875,7 +1010,7 @@
                 favorites.push(promptId)
             }
             await chrome.storage.sync.set({ 'banana-favorites': favorites })
-            this.applyFilters()
+            this.applyFilters(false)
         }
 
         showAddPromptModal() {
@@ -1376,7 +1511,7 @@
                 range.collapse(false) // false 表示折叠到末尾
                 sel.removeAllRanges()
                 sel.addRange(range)
-                
+
                 if (this.modal) this.modal.hide()
             }
         }
