@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             0.0.10
+// @version             1.3.0
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -310,7 +310,7 @@ OK，我想要：`,
 
                 const baseStyle = `padding: 10px 16px; cursor: pointer; transition: all 0.2s; font-size: 14px;`
                 const selectedStyle = isSelected
-                    ? `background: ${colors.primary}15; color: ${colors.primary}; font-weight: 600;`
+                ? `background: ${colors.primary}15; color: ${colors.primary}; font-weight: 600;`
                     : `background: transparent; color: ${colors.text};`
                 option.style.cssText = baseStyle + selectedStyle
 
@@ -509,7 +509,7 @@ OK，我想要：`,
             const currentModeText = this.sortMode === 'recommend' ? '随机焕新' : '推荐排序'
             sortBtn.innerHTML = this.sortMode === 'recommend'
                 ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>'
-                : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>'
+            : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>'
             sortBtn.style.cssText = `padding: ${mobile ? '10px' : '8px'}; border: none; background: transparent; color: ${colors.textSecondary}; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; border-radius: 8px;`
             sortBtn.onclick = () => this.toggleSortMode()
 
@@ -740,7 +740,7 @@ OK，我想要：`,
                 const currentModeText = newMode === 'recommend' ? '随机焕新' : '推荐排序'
                 sortBtn.innerHTML = newMode === 'recommend'
                     ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>'
-                    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>'
+                : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>'
 
                 if (tooltip) {
                     tooltip.textContent = `切换${currentModeText}`
@@ -759,9 +759,9 @@ OK，我想要：`,
 
             let filtered = this.prompts.filter(prompt => {
                 const matchesSearch = !keyword ||
-                    prompt.title.toLowerCase().includes(keyword) ||
-                    prompt.prompt.toLowerCase().includes(keyword) ||
-                    prompt.author.toLowerCase().includes(keyword)
+                      prompt.title.toLowerCase().includes(keyword) ||
+                      prompt.prompt.toLowerCase().includes(keyword) ||
+                      prompt.author.toLowerCase().includes(keyword)
 
                 if (!matchesSearch) return false
 
@@ -1072,10 +1072,10 @@ OK，我想要：`,
                 tagText = isEdit ? '编辑' : '生图'
                 tagBg = theme === 'dark'
                     ? (isEdit ? 'rgba(10, 132, 255, 0.15)' : 'rgba(48, 209, 88, 0.15)')
-                    : (isEdit ? 'rgba(0, 122, 255, 0.12)' : 'rgba(52, 199, 89, 0.12)')
+                : (isEdit ? 'rgba(0, 122, 255, 0.12)' : 'rgba(52, 199, 89, 0.12)')
                 tagColor = theme === 'dark'
                     ? (isEdit ? '#0a84ff' : '#30d158')
-                    : (isEdit ? '#007aff' : '#34c759')
+                : (isEdit ? '#007aff' : '#34c759')
             }
 
             modeTag.style.cssText = `background: ${tagBg}; color: ${tagColor}; padding: 4px 10px; border-radius: 12px; font-size: ${mobile ? '12px' : '11px'}; font-weight: 600; backdrop-filter: blur(10px); flex-shrink: 0;`
@@ -1510,7 +1510,7 @@ OK，我想要：`,
                     if (success) clearInterval(checkInterval)
                 }
             }, 1000)
-        }
+            }
 
         startObserver() {
             const observer = new MutationObserver(() => {
@@ -1742,9 +1742,9 @@ OK，我想要：`,
                     // 如果没有选区，追加到末尾
                     const htmlContent = promptText.split('\n').map(line => {
                         const escaped = line
-                            .replace(/&/g, '&amp;')
-                            .replace(/</g, '&lt;')
-                            .replace(/>/g, '&gt;')
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
                         return `<p>${escaped || '<br>'}</p>`
                     }).join('')
                     el.innerHTML += htmlContent
