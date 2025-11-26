@@ -1190,6 +1190,11 @@
             if (textarea) {
                 textarea.value = promptText
                 textarea.dispatchEvent(new Event('input', { bubbles: true }))
+
+                textarea.focus()
+                const length = promptText.length
+                textarea.setSelectionRange(length, length)
+
                 if (this.modal) this.modal.hide()
             }
         }
@@ -1362,6 +1367,16 @@
                 }).join('')
                 textarea.innerHTML = htmlContent
                 textarea.dispatchEvent(new Event('input', { bubbles: true }))
+
+                // 聚焦并将光标定位到文字末尾
+                textarea.focus()
+                const range = document.createRange()
+                const sel = window.getSelection()
+                range.selectNodeContents(textarea)
+                range.collapse(false) // false 表示折叠到末尾
+                sel.removeAllRanges()
+                sel.addRange(range)
+                
                 if (this.modal) this.modal.hide()
             }
         }
