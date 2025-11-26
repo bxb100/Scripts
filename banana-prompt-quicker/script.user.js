@@ -1231,7 +1231,7 @@
         }
 
         async findClosestInsertButton() {
-            let el = document.querySelector('button.toolbox-drawer-item-deselect-button')
+            let el = document.querySelector('button.toolbox-drawer-item-deselect-button:has(img.img-icon)')
             if (el) {
                 return el
 
