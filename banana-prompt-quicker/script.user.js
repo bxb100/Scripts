@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             0.0.3
+// @version             1.3.0
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -15,6 +15,8 @@
 // @grant               GM_xmlhttpRequest
 // @grant               GM_addElement
 // @grant               GM_log
+// @grant               GM_openInTab
+// @grant               GM_registerMenuCommand
 // @connect             raw.githubusercontent.com
 // @source              https://github.com/bxb100/Scripts/tree/main/banana-prompt-quicker
 // @homepage            https://github.com/bxb100/Scripts/tree/main/banana-prompt-quicker
@@ -43,12 +45,6 @@
         }
     })()
 
-    // --- Configuration ---
-    // 更新后的 JSON 请求地址
-    const GITHUB_PROMPTS_URL = 'https://raw.githubusercontent.com/glidea/banana-prompt-quicker/refs/heads/main/prompts.json';
-    const CACHE_KEY = 'banana_prompts_cache';
-    const CACHE_TIMESTAMP_KEY = 'banana_prompts_cache_time';
-    const CACHE_DURATION = 2 * 60 * 1000; // 2 min
 
     // --- Polyfills for Chrome Extension API ---
     // 模拟 chrome.storage 使用 GM_storage
@@ -101,41 +97,126 @@
     }
 
     // --- prompts.js Logic ---
-    const PromptManager = {
-        async get() {
-            try {
-                // 1. Check cache
-                const cache = await chrome.storage.local.get([CACHE_KEY, CACHE_TIMESTAMP_KEY]);
-                const cachedPrompts = cache[CACHE_KEY];
-                const cacheTime = cache[CACHE_TIMESTAMP_KEY];
-                const now = Date.now();
-                if (cachedPrompts && cacheTime && (now - cacheTime < CACHE_DURATION)) {
-                    GM_log('[Banana] Using cached prompts');
-                    return cachedPrompts;
+    const PromptManager = (() => {
+        const GITHUB_PROMPTS_URL = 'https://raw.githubusercontent.com/glidea/banana-prompt-quicker/refs/heads/main/prompts.json';
+        const CACHE_KEY = 'banana_prompts_cache';
+        const CACHE_TIMESTAMP_KEY = 'banana_prompts_cache_time';
+        const CACHE_DURATION = 2 * 60 * 1000; // 2 min
+
+        return {
+            async get() {
+                try {
+                    // 1. Check cache
+                    const cache = await chrome.storage.local.get([CACHE_KEY, CACHE_TIMESTAMP_KEY]);
+                    const cachedPrompts = cache[CACHE_KEY];
+                    const cacheTime = cache[CACHE_TIMESTAMP_KEY];
+                    const now = Date.now();
+                    if (cachedPrompts && cacheTime && (now - cacheTime < CACHE_DURATION)) {
+                        GM_log('[Banana] Using cached prompts');
+                        return cachedPrompts;
+                    }
+
+                    // 2. Fetch from GitHub using GM_xmlhttpRequest
+                    GM_log('[Banana] Fetching prompts from GitHub...');
+                    const data = await gmFetchJson(GITHUB_PROMPTS_URL);
+
+                    // 3. Update cache
+                    await chrome.storage.local.set({
+                        [CACHE_KEY]: data,
+                        [CACHE_TIMESTAMP_KEY]: now
+                    });
+                    GM_log('[Banana] Prompts updated from GitHub');
+                    return data;
+
+                } catch (error) {
+                    GM_log('[Banana] Failed to fetch prompts:', error);
+
+                    // 4. Fallback to cache if available (even if expired)
+                    const cache = await chrome.storage.local.get([CACHE_KEY]);
+                    return cache[CACHE_KEY] || [];
                 }
-
-                // 2. Fetch from GitHub using GM_xmlhttpRequest
-                GM_log('[Banana] Fetching prompts from GitHub...');
-                const data = await gmFetchJson(GITHUB_PROMPTS_URL);
-
-                // 3. Update cache
-                await chrome.storage.local.set({
-                    [CACHE_KEY]: data,
-                    [CACHE_TIMESTAMP_KEY]: now
-                });
-                GM_log('[Banana] Prompts updated from GitHub');
-                return data;
-
-            } catch (error) {
-                GM_log('[Banana] Failed to fetch prompts:', error);
-
-                // 4. Fallback to cache if available (even if expired)
-                const cache = await chrome.storage.local.get([CACHE_KEY]);
-                return cache[CACHE_KEY] || [];
             }
         }
-    };
+    })()
 
+    // 默认主题颜色配置
+    function getDefaultThemeColors(theme = 'light') {
+        if (theme === 'dark') {
+            return {
+                background: '#141414',
+                surface: '#1c1c1e',
+                border: '#38383a',
+                text: '#f5f5f7',
+                textSecondary: '#98989d',
+                primary: '#0a84ff',
+                hover: '#2c2c2e',
+                inputBg: '#1c1c1e',
+                inputBorder: '#38383a',
+                shadow: 'rgba(0,0,0,0.5)'
+            }
+        }
+
+        return {
+            background: '#ffffff',
+            surface: '#f5f5f7',
+            border: '#d2d2d7',
+            text: '#1d1d1f',
+            textSecondary: '#6e6e73',
+            primary: '#007aff',
+            hover: '#e8e8ed',
+            inputBg: '#ffffff',
+            inputBorder: '#d2d2d7',
+            shadow: 'rgba(0,0,0,0.1)'
+        }
+    }
+
+
+    // 20251125 新增: 获取远程 selector 配置
+    async function getRemoteSelector(platform, type) {
+        const CACHE_KEY = 'selector_config'
+        const CACHE_DURATION = 2 * 60 * 1000 // 2分钟
+        const CONFIG_URL = 'https://raw.githubusercontent.com/glidea/banana-prompt-quicker/main/selectors.json'
+        // 1. 尝试从缓存获取
+        const cached = await chrome.storage.local.get(CACHE_KEY)
+        if (cached[CACHE_KEY]) {
+            const { data, timestamp } = cached[CACHE_KEY]
+            if (Date.now() - timestamp < CACHE_DURATION) {
+                return data[platform]?.[type]
+            }
+        }
+        // 2. 请求远程配置
+        try {
+            const config = await gmFetchJson(CONFIG_URL)
+            // 缓存配置
+            await chrome.storage.local.set({
+                [CACHE_KEY]: {
+                    data: config,
+                    timestamp: Date.now()
+                }
+            })
+            return config[platform]?.[type]
+        } catch (error) {
+            console.warn('获取远程 selector 失败:', error)
+            // 降级:使用过期缓存
+            return cached[CACHE_KEY]?.data?.[platform]?.[type]
+        }
+    }
+
+    const FLASH_MODE_PROMPT = {
+        title: "灵光模式",
+        preview: "https://cdn.jsdelivr.net/gh/glidea/banana-prompt-quicker@main/images/flash_mode.png",
+        prompt: `你现在进入【灵光模式: 有灵感就够了】。请按照以下步骤辅助我完成创作：
+1. 需求理解：分析我输入的粗略的想法描述（可能会包含图片）
+2. 需求澄清：要求我做出细节澄清，提出 3 个你认为最重要的选择题（A/B/C/D），以明确我的生图或修图需求（例如风格、构图、光影、具体相关细节等）。请一次性列出这三个问题
+3. 最终执行：等待我回答选择题后，根据我的原始描述和选择结果调用绘图工具生成图片（如果有附图，请务必作为参数传递给绘图工具，以保证一致性）
+
+---
+
+OK，我想要：`,
+        link: "https://www.xiaohongshu.com/user/profile/5f7dc54d0000000001004afb",
+        author: "Official@glidea",
+        isFlash: true
+    }
     // --- modal.js Logic ---
     class BananaModal {
         constructor(adapter) {
@@ -146,12 +227,16 @@
             this.customPrompts = []
             this.categories = new Set(['全部'])
             this.selectedCategory = 'all'
+            this.sortMode = 'recommend' // 'recommend' | 'random'
+            this.loadPrompts()
+            this.loadSortMode()
             this.currentPage = 1
             this.pageSize = this.isMobile() ? 8 : 12
             this.filteredPrompts = []
             this.favorites = []
             this.keyboardHandler = this.handleKeyboard.bind(this)
-            this.loadPrompts()
+            this._isInitialized = false // 用于区分首次显示和重新显示
+            this.randomMap = new Map()
         }
 
         async loadPrompts() {
@@ -172,6 +257,22 @@
 
             this.updateCategoryDropdown()
             this.applyFilters()
+
+            this.ensureRandomValues()
+
+            this.updateCategoryDropdown()
+            // 只在首次加载或有必要时重置页码
+            this.applyFilters(!this._isInitialized)
+        }
+
+        ensureRandomValues() {
+            this.prompts.forEach(p => {
+                const key = `${p.title}-${p.author}`
+                if (!this.randomMap.has(key)) {
+                    this.randomMap.set(key, Math.random())
+                }
+                p._randomVal = this.randomMap.get(key)
+            })
         }
 
         updateCategoryDropdown() {
@@ -209,7 +310,7 @@
 
                 const baseStyle = `padding: 10px 16px; cursor: pointer; transition: all 0.2s; font-size: 14px;`
                 const selectedStyle = isSelected
-                    ? `background: ${colors.primary}15; color: ${colors.primary}; font-weight: 600;`
+                ? `background: ${colors.primary}15; color: ${colors.primary}; font-weight: 600;`
                     : `background: transparent; color: ${colors.text};`
                 option.style.cssText = baseStyle + selectedStyle
 
@@ -239,7 +340,7 @@
 
                     this.populateCategoryDropdown(optionsContainer, triggerText)
 
-                    this.applyFilters()
+                    this.applyFilters(true)
                 }
 
                 optionsContainer.appendChild(option)
@@ -250,9 +351,60 @@
             triggerText.textContent = currentLabel
         }
 
+        async loadSortMode() {
+            const result = await chrome.storage.local.get(['banana-sort-mode'])
+            this.sortMode = result['banana-sort-mode'] || 'recommend'
+        }
+
+        async setSortMode(mode) {
+            this.sortMode = mode
+            await chrome.storage.local.set({ 'banana-sort-mode': mode })
+        }
+
         async getCustomPrompts() {
             const result = await chrome.storage.local.get(['banana-custom-prompts'])
             return result['banana-custom-prompts'] || []
+        }
+
+        async compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader()
+                reader.readAsDataURL(file)
+                reader.onload = (event) => {
+                    const img = new Image()
+                    img.src = event.target.result
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas')
+                        const MAX_WIDTH = 300
+                        const MAX_HEIGHT = 300
+                        let width = img.width
+                        let height = img.height
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width
+                                width = MAX_WIDTH
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height
+                                height = MAX_HEIGHT
+                            }
+                        }
+
+                        canvas.width = width
+                        canvas.height = height
+                        const ctx = canvas.getContext('2d')
+                        ctx.drawImage(img, 0, 0, width, height)
+
+                        // 压缩为 JPEG, 质量 0.7
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
+                        resolve(dataUrl)
+                    }
+                    img.onerror = reject
+                }
+                reader.onerror = reject
+            })
         }
 
         show() {
@@ -261,7 +413,18 @@
                 document.body.appendChild(this.modal)
             }
             this.modal.style.display = 'flex'
-            this.loadPrompts() // Reload to ensure updates
+            if (!this._isInitialized) {
+                // 首次显示：完整初始化
+                this.updateCategoryDropdown()
+                this.applyFilters(true)
+                this._isInitialized = true
+            } else {
+                // 重新显示：只刷新数据，保留状态
+                this.loadPrompts().then(() => {
+                    // 刷新当前页面显示（保持在当前页）
+                    this.renderCurrentPage()
+                })
+            }
             // 添加键盘事件监听器
             document.addEventListener('keydown', this.keyboardHandler)
         }
@@ -317,12 +480,16 @@
             const searchSection = document.createElement('div')
             searchSection.style.cssText = `padding: ${mobile ? '16px' : '20px 24px'}; border-bottom: 1px solid ${colors.border}; display: flex; ${mobile ? 'flex-direction: column; gap: 12px;' : 'align-items: center; gap: 16px;'}; overflow: visible; z-index: 100; position: relative;`
 
+            // 搜索框容器
+            const searchContainer = document.createElement('div')
+            searchContainer.style.cssText = `${mobile ? 'width: 100%;' : 'flex: 1;'} display: flex; align-items: center; gap: 8px; position: relative;`
+
             const searchInput = document.createElement('input')
             searchInput.type = 'text'
             searchInput.id = 'prompt-search'
             searchInput.placeholder = '搜索...'
-            searchInput.style.cssText = `${mobile ? 'width: 100%;' : 'flex: 1;'} padding: ${mobile ? '14px 20px' : '12px 18px'}; border: 1px solid ${colors.inputBorder}; border-radius: 16px; outline: none; font-size: ${mobile ? '16px' : '14px'}; background: ${colors.inputBg}; color: ${colors.text}; box-sizing: border-box; transition: all 0.2s;`
-            searchInput.addEventListener('input', () => this.applyFilters())
+            searchInput.style.cssText = `flex: 1; padding: ${mobile ? '14px 20px' : '12px 18px'}; border: 1px solid ${colors.inputBorder}; border-radius: 16px; outline: none; font-size: ${mobile ? '16px' : '14px'}; background: ${colors.inputBg}; color: ${colors.text}; box-sizing: border-box; transition: all 0.2s;`
+            searchInput.addEventListener('input', () => this.applyFilters(true))
 
             searchInput.addEventListener('focus', () => {
                 searchInput.style.borderColor = colors.primary
@@ -331,6 +498,47 @@
                 const currentColors = this.adapter.getThemeColors()
                 searchInput.style.borderColor = currentColors.inputBorder
             })
+
+
+            // Sort Mode Button
+            const sortBtnContainer = document.createElement('div')
+            sortBtnContainer.style.cssText = 'position: relative; display: flex; align-items: center;'
+
+            const sortBtn = document.createElement('button')
+            sortBtn.id = 'sort-mode-btn'
+            const currentModeText = this.sortMode === 'recommend' ? '随机焕新' : '推荐排序'
+            sortBtn.innerHTML = this.sortMode === 'recommend'
+                ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>'
+            : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>'
+            sortBtn.style.cssText = `padding: ${mobile ? '10px' : '8px'}; border: none; background: transparent; color: ${colors.textSecondary}; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; border-radius: 8px;`
+            sortBtn.onclick = () => this.toggleSortMode()
+
+            // Tooltip
+            const tooltip = document.createElement('div')
+            tooltip.id = 'sort-tooltip'
+            tooltip.textContent = `切换${currentModeText}`
+            tooltip.style.cssText = `position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%); background: ${colors.surface}; color: ${colors.text}; padding: 6px 12px; border-radius: 8px; font-size: 12px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s; box-shadow: 0 4px 12px ${colors.shadow}; border: 1px solid ${colors.border}; z-index: 1000;`
+
+            if (!mobile) {
+                sortBtn.onmouseenter = () => {
+                    sortBtn.style.color = colors.primary
+                    sortBtn.style.transform = 'scale(1.1)'
+                    sortBtn.style.background = `${colors.primary}10`
+                    tooltip.style.opacity = '1'
+                }
+                sortBtn.onmouseleave = () => {
+                    sortBtn.style.color = colors.textSecondary
+                    sortBtn.style.transform = 'scale(1)'
+                    sortBtn.style.background = 'transparent'
+                    tooltip.style.opacity = '0'
+                }
+            }
+
+            sortBtnContainer.appendChild(sortBtn)
+            sortBtnContainer.appendChild(tooltip)
+
+            searchContainer.appendChild(searchInput)
+            searchContainer.appendChild(sortBtnContainer)
 
             const filterContainer = document.createElement('div')
             filterContainer.style.cssText = `display: flex; gap: 8px; align-items: center; ${mobile ? 'justify-content: space-between; flex-wrap: wrap;' : ''}; position: relative; z-index: 101;`
@@ -431,7 +639,7 @@
             filterContainer.appendChild(dropdownContainer)
             filterContainer.appendChild(buttonsContainer)
 
-            searchSection.appendChild(searchInput)
+            searchSection.appendChild(searchContainer)
             searchSection.appendChild(filterContainer)
 
             return searchSection
@@ -514,10 +722,36 @@
                 }
             }
 
-            this.applyFilters()
+            this.applyFilters(true)
         }
 
-        async applyFilters() {
+        async toggleSortMode() {
+            const newMode = this.sortMode === 'recommend' ? 'random' : 'recommend'
+            await this.setSortMode(newMode)
+            if (newMode === 'random') {
+                this.randomMap.clear()
+                this.ensureRandomValues()
+            }
+
+            // 更新按钮图标和 tooltip
+            const sortBtn = document.getElementById('sort-mode-btn')
+            const tooltip = document.getElementById('sort-tooltip')
+            if (sortBtn) {
+                const currentModeText = newMode === 'recommend' ? '随机焕新' : '推荐排序'
+                sortBtn.innerHTML = newMode === 'recommend'
+                    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>'
+                : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>'
+
+                if (tooltip) {
+                    tooltip.textContent = `切换${currentModeText}`
+                }
+            }
+
+            // 重新应用过滤和排序
+            this.applyFilters(true)
+        }
+
+        async applyFilters(resetPage = true) {
             const searchInput = document.getElementById('prompt-search')
             const keyword = searchInput ? searchInput.value.toLowerCase() : ''
 
@@ -525,9 +759,9 @@
 
             let filtered = this.prompts.filter(prompt => {
                 const matchesSearch = !keyword ||
-                    prompt.title.toLowerCase().includes(keyword) ||
-                    prompt.prompt.toLowerCase().includes(keyword) ||
-                    prompt.author.toLowerCase().includes(keyword)
+                      prompt.title.toLowerCase().includes(keyword) ||
+                      prompt.prompt.toLowerCase().includes(keyword) ||
+                      prompt.author.toLowerCase().includes(keyword)
 
                 if (!matchesSearch) return false
 
@@ -550,24 +784,50 @@
                 })
             })
 
-            // Sort: Favorites > Custom > Others
-            filtered.sort((a, b) => {
-                const aId = `${a.title}-${a.author}`
-                const bId = `${b.title}-${b.author}`
-                const aIsFavorite = this.favorites.includes(aId)
-                const bIsFavorite = this.favorites.includes(bId)
+            // Sort: Favorites > Custom > Others (根据 sortMode)
+            // 先分组
+            const favoriteItems = []
+            const customItems = []
+            const normalItems = []
 
-                if (aIsFavorite && !bIsFavorite) return -1
-                if (!aIsFavorite && bIsFavorite) return 1
+            filtered.forEach(item => {
+                const itemId = `${item.title}-${item.author}`
+                const isFavorite = this.favorites.includes(itemId)
 
-                if (a.isCustom && !b.isCustom) return -1
-                if (!a.isCustom && b.isCustom) return 1
-
-                return 0
+                if (isFavorite) {
+                    favoriteItems.push(item)
+                } else if (item.isCustom) {
+                    customItems.push(item)
+                } else {
+                    normalItems.push(item)
+                }
             })
 
+            // 普通项根据 sortMode 排序
+            if (this.sortMode === 'random') {
+                normalItems.sort((a, b) => a._randomVal - b._randomVal)
+            }
+            // recommend 模式下保持原顺序
+
+            // 合并：Flash Mode > 收藏 > 自定义 > 普通
+            filtered = [...favoriteItems, ...customItems, ...normalItems]
+
+            // Always prepend Flash Mode
+            filtered.unshift(FLASH_MODE_PROMPT)
+
             this.filteredPrompts = filtered
-            this.currentPage = 1
+
+            // 智能处理页码：只在需要时重置，或者当前页超出范围时调整
+            if (resetPage) {
+                this.currentPage = 1
+            } else {
+                // 确保当前页在有效范围内
+                const totalPages = Math.ceil(this.filteredPrompts.length / this.pageSize)
+                if (this.currentPage > totalPages && totalPages > 0) {
+                    this.currentPage = totalPages
+                }
+            }
+
             this.renderCurrentPage()
         }
 
@@ -791,18 +1051,35 @@
                 author.style.textDecoration = 'underline'
                 author.onclick = (e) => {
                     e.stopPropagation()
-                    window.open(prompt.link, '_blank')
+                    GM_openInTab(prompt.link, { active: true })
                 }
             } else {
                 author.onclick = () => this.adapter.insertPrompt(prompt.prompt)
             }
 
             const modeTag = document.createElement('span')
-            const isEdit = prompt.mode === 'edit'
-            const tagBg = theme === 'dark' ? (isEdit ? 'rgba(10, 132, 255, 0.15)' : 'rgba(48, 209, 88, 0.15)') : (isEdit ? 'rgba(0, 122, 255, 0.12)' : 'rgba(52, 199, 89, 0.12)')
-            const tagColor = theme === 'dark' ? (isEdit ? '#0a84ff' : '#30d158') : (isEdit ? '#007aff' : '#34c759')
+            let tagText = '生图'
+            let tagBg = ''
+            let tagColor = ''
+
+            if (prompt.isFlash) {
+                tagText = '万能'
+                // Special Flash Mode styling (e.g., purple/gradient)
+                tagBg = theme === 'dark' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(147, 51, 234, 0.12)'
+                tagColor = theme === 'dark' ? '#a855f7' : '#9333ea'
+            } else {
+                const isEdit = prompt.mode === 'edit'
+                tagText = isEdit ? '编辑' : '生图'
+                tagBg = theme === 'dark'
+                    ? (isEdit ? 'rgba(10, 132, 255, 0.15)' : 'rgba(48, 209, 88, 0.15)')
+                : (isEdit ? 'rgba(0, 122, 255, 0.12)' : 'rgba(52, 199, 89, 0.12)')
+                tagColor = theme === 'dark'
+                    ? (isEdit ? '#0a84ff' : '#30d158')
+                : (isEdit ? '#007aff' : '#34c759')
+            }
+
             modeTag.style.cssText = `background: ${tagBg}; color: ${tagColor}; padding: 4px 10px; border-radius: 12px; font-size: ${mobile ? '12px' : '11px'}; font-weight: 600; backdrop-filter: blur(10px); flex-shrink: 0;`
-            modeTag.textContent = isEdit ? '编辑' : '生图'
+            modeTag.textContent = tagText
 
             bottomRow.appendChild(author)
             bottomRow.appendChild(modeTag)
@@ -843,7 +1120,7 @@
                 favorites.push(promptId)
             }
             await chrome.storage.sync.set({ 'banana-favorites': favorites })
-            this.applyFilters()
+            this.applyFilters(false)
         }
 
         showAddPromptModal() {
@@ -880,6 +1157,71 @@
             }
 
             const titleInput = createInput('标题')
+
+            // Image Upload UI
+            const imageContainer = document.createElement('div')
+            imageContainer.style.cssText = `display: flex; align-items: center; gap: 12px; width: 100%;`
+
+            const fileInput = document.createElement('input')
+            fileInput.type = 'file'
+            fileInput.accept = 'image/*'
+            fileInput.style.display = 'none'
+
+            const previewBtn = document.createElement('div')
+            previewBtn.style.cssText = `width: 60px; height: 60px; border-radius: 12px; border: 1px dashed ${colors.border}; background: ${colors.inputBg}; cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; flex-shrink: 0; transition: all 0.2s;`
+
+            const placeholderIcon = document.createElement('span')
+            placeholderIcon.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${colors.textSecondary}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`
+            previewBtn.appendChild(placeholderIcon)
+
+            const previewImg = document.createElement('img')
+            previewImg.style.cssText = `width: 100%; height: 100%; object-fit: cover; display: none;`
+            previewBtn.appendChild(previewImg)
+
+            const uploadTip = document.createElement('span')
+            uploadTip.textContent = '上传封面 (可选)'
+            uploadTip.style.cssText = `font-size: 13px; color: ${colors.textSecondary};`
+
+            const clearImgBtn = document.createElement('button')
+            clearImgBtn.innerHTML = '×'
+            clearImgBtn.style.cssText = `margin-left: auto; width: 24px; height: 24px; border-radius: 50%; background: ${colors.border}; color: ${colors.text}; border: none; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 16px; padding-bottom: 2px;`
+
+            previewBtn.onclick = () => fileInput.click()
+
+            let selectedFile = null
+
+            fileInput.onchange = (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0]
+                    selectedFile = file
+
+                    const reader = new FileReader()
+                    reader.onload = (evt) => {
+                        previewImg.src = evt.target.result
+                        previewImg.style.display = 'block'
+                        placeholderIcon.style.display = 'none'
+                        previewBtn.style.borderStyle = 'solid'
+                        clearImgBtn.style.display = 'flex'
+                    }
+                    reader.readAsDataURL(file)
+                }
+            }
+
+            clearImgBtn.onclick = () => {
+                fileInput.value = ''
+                selectedFile = null
+                previewImg.src = ''
+                previewImg.style.display = 'none'
+                placeholderIcon.style.display = 'block'
+                previewBtn.style.borderStyle = 'dashed'
+                clearImgBtn.style.display = 'none'
+            }
+
+            imageContainer.appendChild(fileInput)
+            imageContainer.appendChild(previewBtn)
+            imageContainer.appendChild(uploadTip)
+            imageContainer.appendChild(clearImgBtn)
+
             const promptInput = createInput('Prompt 内容', true)
 
             // Category Dropdown for Add Prompt
@@ -984,11 +1326,29 @@
                     alert('请填写标题和内容')
                     return
                 }
+
+                let previewDataUrl = 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg'
+
+                if (selectedFile) {
+                    try {
+                        saveBtn.textContent = '处理中...'
+                        saveBtn.disabled = true
+                        previewDataUrl = await this.compressImage(selectedFile)
+                    } catch (err) {
+                        console.error('图片压缩失败', err)
+                        alert('图片处理失败，将使用默认图标')
+                    } finally {
+                        saveBtn.textContent = '保存'
+                        saveBtn.disabled = false
+                    }
+                }
+
                 await this.saveCustomPrompt({
                     title: titleVal,
                     prompt: promptVal,
                     mode: selectedMode,
-                    category: selectedAddCategory
+                    category: selectedAddCategory,
+                    preview: previewDataUrl
                 })
                 document.body.removeChild(overlay)
                 cleanup()
@@ -999,6 +1359,7 @@
 
             dialog.appendChild(title)
             dialog.appendChild(titleInput)
+            dialog.appendChild(imageContainer)
             dialog.appendChild(categoryContainer)
             dialog.appendChild(promptInput)
             dialog.appendChild(modeContainer)
@@ -1021,7 +1382,7 @@
                 author: 'Me',
                 isCustom: true,
                 id: Date.now(),
-                preview: 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg'
+                preview: data.preview || 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg'
             }
             const customPrompts = await this.getCustomPrompts()
             customPrompts.unshift(newPrompt)
@@ -1034,14 +1395,30 @@
     class AIStudioAdapter {
         constructor() {
             this.modal = null
+            this._initializingButton = false
         }
 
-        findPromptInput() {
-            return document.querySelector('ms-prompt-input-wrapper textarea')
+        async findPromptInput() {
+            let el = document.querySelector('ms-prompt-input-wrapper textarea')
+            if (el) {
+                return el
+            }
+
+            // Fallback.
+            const s = await getRemoteSelector('aistudio', 'promptInput')
+            return document.querySelector(s)
         }
 
-        findRunButton() {
-            return document.querySelector('ms-run-button button')
+
+        async findClosestInsertButton() {
+            let el = document.querySelector('ms-run-button button')
+            if (el) {
+                return el
+            }
+
+            // Fallback.
+            const s = await getRemoteSelector('aistudio', 'insertButton')
+            return document.querySelector(s)
         }
 
         getCurrentTheme() {
@@ -1049,35 +1426,9 @@
         }
 
         getThemeColors() {
-            const theme = this.getCurrentTheme()
-            if (theme === 'dark') {
-                return {
-                    background: '#141414',
-                    surface: '#1c1c1e',
-                    surfaceHover: '#2c2c2e',
-                    border: '#38383a',
-                    text: '#f5f5f7',
-                    textSecondary: '#98989d',
-                    primary: '#0a84ff',
-                    hover: '#2c2c2e',
-                    inputBg: '#1c1c1e',
-                    inputBorder: '#38383a',
-                    shadow: 'rgba(0,0,0,0.5)'
-                }
-            }
-            return {
-                background: '#ffffff',
-                surface: '#f5f5f7',
-                surfaceHover: '#e8e8ed',
-                border: '#d2d2d7',
-                text: '#1d1d1f',
-                textSecondary: '#6e6e73',
-                primary: '#007aff',
-                hover: '#e8e8ed',
-                inputBg: '#ffffff',
-                inputBorder: '#d2d2d7',
-                shadow: 'rgba(0,0,0,0.1)'
-            }
+            return getDefaultThemeColors(this.getCurrentTheme())
+
+
         }
 
         createButton() {
@@ -1108,39 +1459,58 @@
             return wrapper
         }
 
-        initButton() {
+        async initButton() {
             if (document.getElementById('banana-btn')) return true
-            const runButton = this.findRunButton()
-            if (!runButton) return false
-            const bananaBtn = this.createButton()
-            const buttonWrapper = runButton.parentElement
-            try {
-                buttonWrapper.parentElement.insertBefore(bananaBtn, buttonWrapper)
-            } catch (error) {
-                GM_log('插入香蕉按钮失败:', error)
-                buttonWrapper.insertAdjacentElement('beforebegin', bananaBtn)
+            if (this._initializingButton) {
+                return false
             }
-            return true
+            this._initializingButton = true
+
+            try {
+                const runButton = await this.findClosestInsertButton()
+                if (!runButton) {
+                    return false
+                }
+
+                const bananaBtn = this.createButton()
+                const buttonWrapper = runButton.parentElement
+
+                try {
+                    buttonWrapper.parentElement.insertBefore(bananaBtn, buttonWrapper)
+                } catch (error) {
+                    console.error('插入香蕉按钮失败:', error)
+                    buttonWrapper.insertAdjacentElement('beforebegin', bananaBtn)
+                }
+
+                return true
+            } finally {
+                this._initializingButton = false
+            }
         }
 
-        insertPrompt(promptText) {
-            const textarea = this.findPromptInput()
+        async insertPrompt(promptText) {
+            const textarea = await this.findPromptInput()
             if (textarea) {
                 textarea.value = promptText
                 textarea.dispatchEvent(new Event('input', { bubbles: true }))
+
+                textarea.focus()
+                const length = promptText.length
+                textarea.setSelectionRange(length, length)
+
                 if (this.modal) this.modal.hide()
             }
         }
 
         waitForElements() {
-            const checkInterval = setInterval(() => {
-                const input = this.findPromptInput()
+            const checkInterval = setInterval(async () => {
+                const input = await this.findPromptInput()
                 if (input) {
-                    const success = this.initButton()
+                    const success = await this.initButton()
                     if (success) clearInterval(checkInterval)
                 }
             }, 1000)
-        }
+            }
 
         startObserver() {
             const observer = new MutationObserver(() => {
@@ -1154,15 +1524,30 @@
     class GeminiAdapter {
         constructor() {
             this.modal = null
+            this._initializingButton = false
         }
 
-        findPromptInput() {
-            return document.querySelector('div[contenteditable="true"][role="textbox"]') ||
-                document.querySelector('rich-textarea div[contenteditable="true"]')
+        async findPromptInput() {
+            let el = document.querySelector('div.ql-editor[contenteditable="true"]')
+            if (el) {
+                return el
+            }
+
+            // Fallback.
+            const selector = await getRemoteSelector('gemini', 'promptInput')
+            return document.querySelector(selector)
         }
 
-        findImageButton() {
-            return document.querySelector('button.toolbox-drawer-item-deselect-button:has(img[src*="nano-banana"])')
+        async findClosestInsertButton() {
+            let el = document.querySelector('button.toolbox-drawer-item-deselect-button:has(img.img-icon)')
+            if (el) {
+                return el
+
+            }
+
+            // Fallback.
+            const s = await getRemoteSelector('gemini', 'insertButton')
+            return document.querySelector(s)
         }
 
         getCurrentTheme() {
@@ -1171,35 +1556,7 @@
         }
 
         getThemeColors() {
-            const theme = this.getCurrentTheme()
-            if (theme === 'dark') {
-                return {
-                    background: '#141414',
-                    surface: '#1c1c1e',
-                    surfaceHover: '#2c2c2e',
-                    border: '#38383a',
-                    text: '#f5f5f7',
-                    textSecondary: '#98989d',
-                    primary: '#0a84ff',
-                    hover: '#2c2c2e',
-                    inputBg: '#1c1c1e',
-                    inputBorder: '#38383a',
-                    shadow: 'rgba(0,0,0,0.5)'
-                }
-            }
-            return {
-                background: '#ffffff',
-                surface: '#f5f5f7',
-                surfaceHover: '#e8e8ed',
-                border: '#d2d2d7',
-                text: '#1d1d1f',
-                textSecondary: '#6e6e73',
-                primary: '#007aff',
-                hover: '#e8e8ed',
-                inputBg: '#ffffff',
-                inputBorder: '#d2d2d7',
-                shadow: 'rgba(0,0,0,0.1)'
-            }
+            return getDefaultThemeColors(this.getCurrentTheme())
         }
 
         createButton() {
@@ -1247,22 +1604,35 @@
             return btn
         }
 
-        initButton() {
+        async initButton() {
             if (document.getElementById('banana-btn')) return true
-            const imageBtn = this.findImageButton()
-            if (!imageBtn) return false
-            const bananaBtn = this.createButton()
-            try {
-                imageBtn.insertAdjacentElement('afterend', bananaBtn)
-            } catch (error) {
-                GM_log('插入香蕉按钮失败:', error)
+            if (this._initializingButton) {
                 return false
             }
-            return true
+            this._initializingButton = true
+
+            try {
+                const imageBtn = await this.findClosestInsertButton()
+                if (!imageBtn) {
+                    return false
+                }
+
+                const bananaBtn = this.createButton()
+                try {
+                    imageBtn.insertAdjacentElement('afterend', bananaBtn)
+                } catch (error) {
+                    console.error('插入香蕉按钮失败:', error)
+                    return false
+                }
+
+                return true
+            } finally {
+                this._initializingButton = false
+            }
         }
 
-        insertPrompt(promptText) {
-            const textarea = this.findPromptInput()
+        async insertPrompt(promptText) {
+            const textarea = await this.findPromptInput()
             if (textarea) {
                 textarea.focus()
                 const lines = promptText.split('\n')
@@ -1272,6 +1642,16 @@
                 }).join('')
                 textarea.innerHTML = htmlContent
                 textarea.dispatchEvent(new Event('input', { bubbles: true }))
+
+                // 聚焦并将光标定位到文字末尾
+                textarea.focus()
+                const range = document.createRange()
+                const sel = window.getSelection()
+                range.selectNodeContents(textarea)
+                range.collapse(false) // false 表示折叠到末尾
+                sel.removeAllRanges()
+                sel.addRange(range)
+
                 if (this.modal) this.modal.hide()
             }
         }
@@ -1279,17 +1659,131 @@
         waitForElements() { }
 
         startObserver() {
-            const observer = new MutationObserver(() => {
+            const observer = new MutationObserver(async () => {
                 const existingBtn = document.getElementById('banana-btn')
-                const imageBtn = this.findImageButton()
+                const imageBtn = await this.findClosestInsertButton()
                 if (imageBtn) {
-                    if (!existingBtn) this.initButton()
+                    if (!existingBtn) await this.initButton()
                 } else {
                     if (existingBtn) existingBtn.remove()
                 }
             })
             observer.observe(document.body, { childList: true, subtree: true })
         }
+    }
+
+    // 通用适配器，用于任意网站
+    class UniversalAdapter {
+        constructor() {
+            this.modal = null
+            this.lastFocusedElement = null
+            this.trackFocusedElement()
+        }
+
+        // 跟踪最后聚焦的可编辑元素
+        trackFocusedElement() {
+            document.addEventListener('focusin', (e) => {
+                if (this.isEditableElement(e.target)) {
+                    this.lastFocusedElement = e.target
+                }
+            })
+        }
+
+        isEditableElement(el) {
+            if (!el) return false
+            return el.tagName === 'TEXTAREA' ||
+                (el.tagName === 'INPUT' && ['text', 'search', 'email', 'url'].includes(el.type)) ||
+                el.isContentEditable
+        }
+
+        async findPromptInput() {
+            // 优先使用最后聚焦的元素
+            if (this.lastFocusedElement && this.isEditableElement(this.lastFocusedElement)) {
+                return this.lastFocusedElement
+            }
+            // fallback 到当前激活元素
+            const active = document.activeElement
+            if (this.isEditableElement(active)) {
+                return active
+            }
+            return null
+        }
+
+        async insertPrompt(promptText) {
+            const el = await this.findPromptInput()
+            if (!el || !this.isEditableElement(el)) {
+                alert('🍌 请先点击输入框，然后再右键选择 Banana Prompts')
+                return
+            }
+
+            if (el.isContentEditable) {
+                // contenteditable 处理 - 在光标位置插入
+                const selection = window.getSelection()
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0)
+                    range.deleteContents()
+
+                    const lines = promptText.split('\n')
+                    const fragment = document.createDocumentFragment()
+
+                    lines.forEach((line, index) => {
+                        const textNode = document.createTextNode(line)
+                        fragment.appendChild(textNode)
+                        if (index < lines.length - 1) {
+                            fragment.appendChild(document.createElement('br'))
+                        }
+                    })
+
+                    range.insertNode(fragment)
+                    range.collapse(false)
+                    selection.removeAllRanges()
+                    selection.addRange(range)
+                } else {
+                    // 如果没有选区，追加到末尾
+                    const htmlContent = promptText.split('\n').map(line => {
+                        const escaped = line
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        return `<p>${escaped || '<br>'}</p>`
+                    }).join('')
+                    el.innerHTML += htmlContent
+                }
+                el.dispatchEvent(new Event('input', { bubbles: true }))
+            } else {
+                // textarea/input 处理 - 在光标位置插入
+                const start = el.selectionStart
+                const end = el.selectionEnd
+                const currentValue = el.value
+
+                const newValue = currentValue.substring(0, start) + promptText + currentValue.substring(end)
+                el.value = newValue
+
+                // 设置光标位置到插入内容之后
+                const newCursorPos = start + promptText.length
+                el.setSelectionRange(newCursorPos, newCursorPos)
+
+                el.dispatchEvent(new Event('input', { bubbles: true }))
+                el.focus()
+            }
+
+            if (this.modal) {
+                this.modal.hide()
+            }
+        }
+
+        getCurrentTheme() {
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        }
+
+        getThemeColors() {
+            return getDefaultThemeColors(this.getCurrentTheme())
+        }
+
+        // 通用适配器不需要按钮
+        initButton() { return false }
+        waitForElements() { }
+        startObserver() { }
     }
 
     // --- Initialization ---
@@ -1301,21 +1795,34 @@
         } else if (hostname.includes('gemini')) {
             adapter = new GeminiAdapter()
         } else {
-            GM_log('Banana Prompt: 未知平台', hostname)
-            return
+            // 其他网站使用通用适配器
+            adapter = new UniversalAdapter()
         }
         const modal = new BananaModal(adapter)
         adapter.modal = modal
-        adapter.waitForElements()
-        adapter.startObserver()
-        const handleNavigationChange = () => {
-            setTimeout(() => {
-                adapter.initButton()
-            }, 1000)
+
+        // 只在特定平台初始化按钮和观察器
+        if (hostname.includes('aistudio') || hostname.includes('gemini')) {
+            adapter.waitForElements()
+            adapter.startObserver()
+
+            const handleNavigationChange = () => {
+                setTimeout(() => {
+                    adapter.initButton()
+                }, 1000)
+            }
+            window.addEventListener('popstate', handleNavigationChange)
+            window.addEventListener('pushstate', handleNavigationChange)
+            window.addEventListener('replacestate', handleNavigationChange)
         }
-        window.addEventListener('popstate', handleNavigationChange)
-        window.addEventListener('pushstate', handleNavigationChange)
-        window.addEventListener('replacestate', handleNavigationChange)
+
+        GM_registerMenuCommand("🍌 Insert Banana Prompts", function (event) {
+            if (modal) {
+                modal.show()
+            }
+        }, {
+            autoClose: true
+        });
     }
 
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
@@ -1323,5 +1830,4 @@
     } else {
         window.addEventListener('load', init)
     }
-
 })();
