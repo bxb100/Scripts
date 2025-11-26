@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             0.0.4
+// @version             0.0.5
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -1066,6 +1066,7 @@
     class AIStudioAdapter {
         constructor() {
             this.modal = null
+            this._initializingButton = false
         }
 
         async findPromptInput() {
@@ -1157,17 +1158,31 @@
 
         async initButton() {
             if (document.getElementById('banana-btn')) return true
-            const runButton = await this.findClosestInsertButton()
-            if (!runButton) return false
-            const bananaBtn = this.createButton()
-            const buttonWrapper = runButton.parentElement
-            try {
-                buttonWrapper.parentElement.insertBefore(bananaBtn, buttonWrapper)
-            } catch (error) {
-                GM_log('插入香蕉按钮失败:', error)
-                buttonWrapper.insertAdjacentElement('beforebegin', bananaBtn)
+            if (this._initializingButton) {
+                return false
             }
-            return true
+            this._initializingButton = true
+
+            try {
+                const runButton = await this.findClosestInsertButton()
+                if (!runButton) {
+                    return false
+                }
+
+                const bananaBtn = this.createButton()
+                const buttonWrapper = runButton.parentElement
+
+                try {
+                    buttonWrapper.parentElement.insertBefore(bananaBtn, buttonWrapper)
+                } catch (error) {
+                    console.error('插入香蕉按钮失败:', error)
+                    buttonWrapper.insertAdjacentElement('beforebegin', bananaBtn)
+                }
+
+                return true
+            } finally {
+                this._initializingButton = false
+            }
         }
 
         async insertPrompt(promptText) {
@@ -1201,6 +1216,7 @@
     class GeminiAdapter {
         constructor() {
             this.modal = null
+            this._initializingButton = false
         }
 
         async findPromptInput() {
@@ -1310,16 +1326,29 @@
 
         async initButton() {
             if (document.getElementById('banana-btn')) return true
-            const imageBtn = await this.findClosestInsertButton()
-            if (!imageBtn) return false
-            const bananaBtn = this.createButton()
-            try {
-                imageBtn.insertAdjacentElement('afterend', bananaBtn)
-            } catch (error) {
-                GM_log('插入香蕉按钮失败:', error)
+            if (this._initializingButton) {
                 return false
             }
-            return true
+            this._initializingButton = true
+
+            try {
+                const imageBtn = await this.findClosestInsertButton()
+                if (!imageBtn) {
+                    return false
+                }
+
+                const bananaBtn = this.createButton()
+                try {
+                    imageBtn.insertAdjacentElement('afterend', bananaBtn)
+                } catch (error) {
+                    console.error('插入香蕉按钮失败:', error)
+                    return false
+                }
+
+                return true
+            } finally {
+                this._initializingButton = false
+            }
         }
 
         async insertPrompt(promptText) {
