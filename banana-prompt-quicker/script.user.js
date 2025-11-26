@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             0.0.7
+// @version             0.0.8
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -315,6 +315,47 @@
         async getCustomPrompts() {
             const result = await chrome.storage.local.get(['banana-custom-prompts'])
             return result['banana-custom-prompts'] || []
+        }
+
+        async compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader()
+                reader.readAsDataURL(file)
+                reader.onload = (event) => {
+                    const img = new Image()
+                    img.src = event.target.result
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas')
+                        const MAX_WIDTH = 300
+                        const MAX_HEIGHT = 300
+                        let width = img.width
+                        let height = img.height
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width
+                                width = MAX_WIDTH
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height
+                                height = MAX_HEIGHT
+                            }
+                        }
+
+                        canvas.width = width
+                        canvas.height = height
+                        const ctx = canvas.getContext('2d')
+                        ctx.drawImage(img, 0, 0, width, height)
+
+                        // 压缩为 JPEG, 质量 0.7
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
+                        resolve(dataUrl)
+                    }
+                    img.onerror = reject
+                }
+                reader.onerror = reject
+            })
         }
 
         show() {
@@ -1047,6 +1088,71 @@
             }
 
             const titleInput = createInput('标题')
+
+            // Image Upload UI
+            const imageContainer = document.createElement('div')
+            imageContainer.style.cssText = `display: flex; align-items: center; gap: 12px; width: 100%;`
+
+            const fileInput = document.createElement('input')
+            fileInput.type = 'file'
+            fileInput.accept = 'image/*'
+            fileInput.style.display = 'none'
+
+            const previewBtn = document.createElement('div')
+            previewBtn.style.cssText = `width: 60px; height: 60px; border-radius: 12px; border: 1px dashed ${colors.border}; background: ${colors.inputBg}; cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; flex-shrink: 0; transition: all 0.2s;`
+
+            const placeholderIcon = document.createElement('span')
+            placeholderIcon.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${colors.textSecondary}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`
+            previewBtn.appendChild(placeholderIcon)
+
+            const previewImg = document.createElement('img')
+            previewImg.style.cssText = `width: 100%; height: 100%; object-fit: cover; display: none;`
+            previewBtn.appendChild(previewImg)
+
+            const uploadTip = document.createElement('span')
+            uploadTip.textContent = '上传封面 (可选)'
+            uploadTip.style.cssText = `font-size: 13px; color: ${colors.textSecondary};`
+
+            const clearImgBtn = document.createElement('button')
+            clearImgBtn.innerHTML = '×'
+            clearImgBtn.style.cssText = `margin-left: auto; width: 24px; height: 24px; border-radius: 50%; background: ${colors.border}; color: ${colors.text}; border: none; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 16px; padding-bottom: 2px;`
+
+            previewBtn.onclick = () => fileInput.click()
+
+            let selectedFile = null
+
+            fileInput.onchange = (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0]
+                    selectedFile = file
+
+                    const reader = new FileReader()
+                    reader.onload = (evt) => {
+                        previewImg.src = evt.target.result
+                        previewImg.style.display = 'block'
+                        placeholderIcon.style.display = 'none'
+                        previewBtn.style.borderStyle = 'solid'
+                        clearImgBtn.style.display = 'flex'
+                    }
+                    reader.readAsDataURL(file)
+                }
+            }
+
+            clearImgBtn.onclick = () => {
+                fileInput.value = ''
+                selectedFile = null
+                previewImg.src = ''
+                previewImg.style.display = 'none'
+                placeholderIcon.style.display = 'block'
+                previewBtn.style.borderStyle = 'dashed'
+                clearImgBtn.style.display = 'none'
+            }
+
+            imageContainer.appendChild(fileInput)
+            imageContainer.appendChild(previewBtn)
+            imageContainer.appendChild(uploadTip)
+            imageContainer.appendChild(clearImgBtn)
+
             const promptInput = createInput('Prompt 内容', true)
 
             // Category Dropdown for Add Prompt
@@ -1151,11 +1257,29 @@
                     alert('请填写标题和内容')
                     return
                 }
+
+                let previewDataUrl = 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg'
+
+                if (selectedFile) {
+                    try {
+                        saveBtn.textContent = '处理中...'
+                        saveBtn.disabled = true
+                        previewDataUrl = await this.compressImage(selectedFile)
+                    } catch (err) {
+                        console.error('图片压缩失败', err)
+                        alert('图片处理失败，将使用默认图标')
+                    } finally {
+                        saveBtn.textContent = '保存'
+                        saveBtn.disabled = false
+                    }
+                }
+
                 await this.saveCustomPrompt({
                     title: titleVal,
                     prompt: promptVal,
                     mode: selectedMode,
-                    category: selectedAddCategory
+                    category: selectedAddCategory,
+                    preview: previewDataUrl
                 })
                 document.body.removeChild(overlay)
                 cleanup()
@@ -1166,6 +1290,7 @@
 
             dialog.appendChild(title)
             dialog.appendChild(titleInput)
+            dialog.appendChild(imageContainer)
             dialog.appendChild(categoryContainer)
             dialog.appendChild(promptInput)
             dialog.appendChild(modeContainer)
@@ -1188,7 +1313,7 @@
                 author: 'Me',
                 isCustom: true,
                 id: Date.now(),
-                preview: 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg'
+                preview: data.preview || 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg'
             }
             const customPrompts = await this.getCustomPrompts()
             customPrompts.unshift(newPrompt)
