@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             0.0.9
+// @version             0.0.10
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -15,6 +15,8 @@
 // @grant               GM_xmlhttpRequest
 // @grant               GM_addElement
 // @grant               GM_log
+// @grant               GM_openInTab
+// @grant               GM_registerMenuCommand
 // @connect             raw.githubusercontent.com
 // @source              https://github.com/bxb100/Scripts/tree/main/banana-prompt-quicker
 // @homepage            https://github.com/bxb100/Scripts/tree/main/banana-prompt-quicker
@@ -136,6 +138,38 @@
             }
         }
     })()
+
+    // 默认主题颜色配置
+    function getDefaultThemeColors(theme = 'light') {
+        if (theme === 'dark') {
+            return {
+                background: '#141414',
+                surface: '#1c1c1e',
+                border: '#38383a',
+                text: '#f5f5f7',
+                textSecondary: '#98989d',
+                primary: '#0a84ff',
+                hover: '#2c2c2e',
+                inputBg: '#1c1c1e',
+                inputBorder: '#38383a',
+                shadow: 'rgba(0,0,0,0.5)'
+            }
+        }
+
+        return {
+            background: '#ffffff',
+            surface: '#f5f5f7',
+            border: '#d2d2d7',
+            text: '#1d1d1f',
+            textSecondary: '#6e6e73',
+            primary: '#007aff',
+            hover: '#e8e8ed',
+            inputBg: '#ffffff',
+            inputBorder: '#d2d2d7',
+            shadow: 'rgba(0,0,0,0.1)'
+        }
+    }
+
 
     // 20251125 新增: 获取远程 selector 配置
     async function getRemoteSelector(platform, type) {
@@ -1017,7 +1051,7 @@ OK，我想要：`,
                 author.style.textDecoration = 'underline'
                 author.onclick = (e) => {
                     e.stopPropagation()
-                    window.open(prompt.link, '_blank')
+                    GM_openInTab(prompt.link, { active: true })
                 }
             } else {
                 author.onclick = () => this.adapter.insertPrompt(prompt.prompt)
@@ -1392,35 +1426,9 @@ OK，我想要：`,
         }
 
         getThemeColors() {
-            const theme = this.getCurrentTheme()
-            if (theme === 'dark') {
-                return {
-                    background: '#141414',
-                    surface: '#1c1c1e',
-                    surfaceHover: '#2c2c2e',
-                    border: '#38383a',
-                    text: '#f5f5f7',
-                    textSecondary: '#98989d',
-                    primary: '#0a84ff',
-                    hover: '#2c2c2e',
-                    inputBg: '#1c1c1e',
-                    inputBorder: '#38383a',
-                    shadow: 'rgba(0,0,0,0.5)'
-                }
-            }
-            return {
-                background: '#ffffff',
-                surface: '#f5f5f7',
-                surfaceHover: '#e8e8ed',
-                border: '#d2d2d7',
-                text: '#1d1d1f',
-                textSecondary: '#6e6e73',
-                primary: '#007aff',
-                hover: '#e8e8ed',
-                inputBg: '#ffffff',
-                inputBorder: '#d2d2d7',
-                shadow: 'rgba(0,0,0,0.1)'
-            }
+            return getDefaultThemeColors(this.getCurrentTheme())
+
+
         }
 
         createButton() {
@@ -1548,35 +1556,7 @@ OK，我想要：`,
         }
 
         getThemeColors() {
-            const theme = this.getCurrentTheme()
-            if (theme === 'dark') {
-                return {
-                    background: '#141414',
-                    surface: '#1c1c1e',
-                    surfaceHover: '#2c2c2e',
-                    border: '#38383a',
-                    text: '#f5f5f7',
-                    textSecondary: '#98989d',
-                    primary: '#0a84ff',
-                    hover: '#2c2c2e',
-                    inputBg: '#1c1c1e',
-                    inputBorder: '#38383a',
-                    shadow: 'rgba(0,0,0,0.5)'
-                }
-            }
-            return {
-                background: '#ffffff',
-                surface: '#f5f5f7',
-                surfaceHover: '#e8e8ed',
-                border: '#d2d2d7',
-                text: '#1d1d1f',
-                textSecondary: '#6e6e73',
-                primary: '#007aff',
-                hover: '#e8e8ed',
-                inputBg: '#ffffff',
-                inputBorder: '#d2d2d7',
-                shadow: 'rgba(0,0,0,0.1)'
-            }
+            return getDefaultThemeColors(this.getCurrentTheme())
         }
 
         createButton() {
@@ -1692,6 +1672,120 @@ OK，我想要：`,
         }
     }
 
+    // 通用适配器，用于任意网站
+    class UniversalAdapter {
+        constructor() {
+            this.modal = null
+            this.lastFocusedElement = null
+            this.trackFocusedElement()
+        }
+
+        // 跟踪最后聚焦的可编辑元素
+        trackFocusedElement() {
+            document.addEventListener('focusin', (e) => {
+                if (this.isEditableElement(e.target)) {
+                    this.lastFocusedElement = e.target
+                }
+            })
+        }
+
+        isEditableElement(el) {
+            if (!el) return false
+            return el.tagName === 'TEXTAREA' ||
+                (el.tagName === 'INPUT' && ['text', 'search', 'email', 'url'].includes(el.type)) ||
+                el.isContentEditable
+        }
+
+        async findPromptInput() {
+            // 优先使用最后聚焦的元素
+            if (this.lastFocusedElement && this.isEditableElement(this.lastFocusedElement)) {
+                return this.lastFocusedElement
+            }
+            // fallback 到当前激活元素
+            const active = document.activeElement
+            if (this.isEditableElement(active)) {
+                return active
+            }
+            return null
+        }
+
+        async insertPrompt(promptText) {
+            const el = await this.findPromptInput()
+            if (!el || !this.isEditableElement(el)) {
+                alert('🍌 请先点击输入框，然后再右键选择 Banana Prompts')
+                return
+            }
+
+            if (el.isContentEditable) {
+                // contenteditable 处理 - 在光标位置插入
+                const selection = window.getSelection()
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0)
+                    range.deleteContents()
+
+                    const lines = promptText.split('\n')
+                    const fragment = document.createDocumentFragment()
+
+                    lines.forEach((line, index) => {
+                        const textNode = document.createTextNode(line)
+                        fragment.appendChild(textNode)
+                        if (index < lines.length - 1) {
+                            fragment.appendChild(document.createElement('br'))
+                        }
+                    })
+
+                    range.insertNode(fragment)
+                    range.collapse(false)
+                    selection.removeAllRanges()
+                    selection.addRange(range)
+                } else {
+                    // 如果没有选区，追加到末尾
+                    const htmlContent = promptText.split('\n').map(line => {
+                        const escaped = line
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                        return `<p>${escaped || '<br>'}</p>`
+                    }).join('')
+                    el.innerHTML += htmlContent
+                }
+                el.dispatchEvent(new Event('input', { bubbles: true }))
+            } else {
+                // textarea/input 处理 - 在光标位置插入
+                const start = el.selectionStart
+                const end = el.selectionEnd
+                const currentValue = el.value
+
+                const newValue = currentValue.substring(0, start) + promptText + currentValue.substring(end)
+                el.value = newValue
+
+                // 设置光标位置到插入内容之后
+                const newCursorPos = start + promptText.length
+                el.setSelectionRange(newCursorPos, newCursorPos)
+
+                el.dispatchEvent(new Event('input', { bubbles: true }))
+                el.focus()
+            }
+
+            if (this.modal) {
+                this.modal.hide()
+            }
+        }
+
+        getCurrentTheme() {
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        }
+
+        getThemeColors() {
+            return getDefaultThemeColors(this.getCurrentTheme())
+        }
+
+        // 通用适配器不需要按钮
+        initButton() { return false }
+        waitForElements() { }
+        startObserver() { }
+    }
+
     // --- Initialization ---
     function init() {
         const hostname = window.location.hostname
@@ -1701,21 +1795,34 @@ OK，我想要：`,
         } else if (hostname.includes('gemini')) {
             adapter = new GeminiAdapter()
         } else {
-            GM_log('Banana Prompt: 未知平台', hostname)
-            return
+            // 其他网站使用通用适配器
+            adapter = new UniversalAdapter()
         }
         const modal = new BananaModal(adapter)
         adapter.modal = modal
-        adapter.waitForElements()
-        adapter.startObserver()
-        const handleNavigationChange = () => {
-            setTimeout(() => {
-                adapter.initButton()
-            }, 1000)
+
+        // 只在特定平台初始化按钮和观察器
+        if (hostname.includes('aistudio') || hostname.includes('gemini')) {
+            adapter.waitForElements()
+            adapter.startObserver()
+
+            const handleNavigationChange = () => {
+                setTimeout(() => {
+                    adapter.initButton()
+                }, 1000)
+            }
+            window.addEventListener('popstate', handleNavigationChange)
+            window.addEventListener('pushstate', handleNavigationChange)
+            window.addEventListener('replacestate', handleNavigationChange)
         }
-        window.addEventListener('popstate', handleNavigationChange)
-        window.addEventListener('pushstate', handleNavigationChange)
-        window.addEventListener('replacestate', handleNavigationChange)
+
+        GM_registerMenuCommand("🍌 Insert Banana Prompts", function (event) {
+            if (modal) {
+                modal.show()
+            }
+        }, {
+            autoClose: true
+        });
     }
 
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
@@ -1723,5 +1830,4 @@ OK，我想要：`,
     } else {
         window.addEventListener('load', init)
     }
-
 })();
