@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             0.0.5
+// @version             0.0.6
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -1220,7 +1220,7 @@
         }
 
         async findPromptInput() {
-            let el = document.querySelector('div[aria-label="Enter a prompt here"]')
+            let el = document.querySelector('div.ql-editor[contenteditable="true"]')
             if (el) {
                 return el
             }
@@ -1231,7 +1231,7 @@
         }
 
         async findClosestInsertButton() {
-            let el = document.querySelector('button[aria-label="Deselect Image"]')
+            let el = document.querySelector('button.toolbox-drawer-item-deselect-button')
             if (el) {
                 return el
 
