@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             1.3.3
+// @version             1.3.4
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -19,6 +19,7 @@
 // @grant               GM_log
 // @grant               GM_openInTab
 // @grant               GM_registerMenuCommand
+// @grant               GM_addStyle
 // @connect             raw.githubusercontent.com
 // @source              https://github.com/bxb100/Scripts/tree/main/banana-prompt-quicker
 // @homepage            https://github.com/bxb100/Scripts/tree/main/banana-prompt-quicker
@@ -486,6 +487,7 @@ OK，我想要：`,
 
         createSearchSection(colors, mobile) {
             const searchSection = document.createElement('div')
+            searchSection.id = 'prompts-search-section'
             searchSection.style.cssText = `padding: ${mobile ? '16px' : '20px 24px'}; border-bottom: 1px solid ${colors.border}; display: flex; ${mobile ? 'flex-direction: column; gap: 12px;' : 'align-items: center; gap: 16px;'}; overflow: visible; z-index: 100; position: relative;`
 
             // 搜索框容器
@@ -945,7 +947,7 @@ OK，我想要：`,
             editablePageBtn.value = this.currentPage
             editablePageBtn.min = 1
             editablePageBtn.max = totalPages
-            editablePageBtn.style.cssText = `width: ${mobile ? '50px' : '40px'}; padding: ${mobile ? '8px' : '6px'}; border: 1px solid ${colors.border}; border-radius: 12px; background: ${colors.surface}; text-align: center; outline: none; box-sizing: border-box; margin: 0 8px;color: inherit; font-size: inherit; font-weight: inherit;`
+            editablePageBtn.style.cssText = `width: fit-content; max-width: 100px; padding: ${mobile ? '8px' : '6px'}; border: 1px solid ${colors.border}; border-radius: 12px; background: ${colors.surface}; text-align: center; outline: none; box-sizing: border-box; margin: 0 8px;color: inherit; font-size: inherit; font-weight: inherit;`
             editablePageBtn.onchange = () => {
                 let val = parseInt(editablePageBtn.value)
                 if (isNaN(val) || val < 1) val = 1
@@ -1849,6 +1851,9 @@ OK，我想要：`,
             autoClose: true
         });
     }
+
+    GM_addStyle('#prompts-modal, #prompts-modal *, #prompts-modal *::before, #prompts-modal *::after{ font-family: Roboto,"Helvetica Neue",sans-serif; };');
+    GM_addStyle('#prompts-search-section, #prompts-search-section *{ box-sizing: content-box; line-height: normal; };');
 
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
         init()
