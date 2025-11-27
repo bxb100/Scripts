@@ -105,48 +105,6 @@
         });
     }
 
-    // --- prompts.js Logic ---
-    const PromptManager = (() => {
-        const GITHUB_PROMPTS_URL = 'https://raw.githubusercontent.com/glidea/banana-prompt-quicker/refs/heads/main/prompts.json';
-        const CACHE_KEY = 'banana_prompts_cache';
-        const CACHE_TIMESTAMP_KEY = 'banana_prompts_cache_time';
-        const CACHE_DURATION = 60 * 60 * 1000; // 60 min per upstream change
-
-        return {
-            async get() {
-                try {
-                    // 1. Check cache
-                    const cache = await chrome.storage.local.get([CACHE_KEY, CACHE_TIMESTAMP_KEY]);
-                    const cachedPrompts = cache[CACHE_KEY];
-                    const cacheTime = cache[CACHE_TIMESTAMP_KEY];
-                    const now = Date.now();
-                    if (cachedPrompts && cacheTime && (now - cacheTime < CACHE_DURATION)) {
-                        GM_log('[Banana] Using cached prompts');
-                        return cachedPrompts;
-                    }
-
-                    // 2. Fetch from GitHub using GM_xmlhttpRequest
-                    GM_log('[Banana] Fetching prompts from GitHub...');
-                    const data = await gmFetchJson(GITHUB_PROMPTS_URL);
-
-                    // 3. Update cache
-                    await chrome.storage.local.set({
-                        [CACHE_KEY]: data,
-                        [CACHE_TIMESTAMP_KEY]: now
-                    });
-                    GM_log('[Banana] Prompts updated from GitHub');
-                    return data;
-
-                } catch (error) {
-                    GM_log('[Banana] Failed to fetch prompts:', error);
-
-                    // 4. Fallback to cache if available (even if expired)
-                    const cache = await chrome.storage.local.get([CACHE_KEY]);
-                    return cache[CACHE_KEY] || [];
-                }
-            }
-        }
-    })()
 
     // --- ConfigManager (unified prompts + config) ---
     const ConfigManager = (() => {
@@ -154,13 +112,13 @@
         const CONFIG_CACHE_KEY = 'banana_config_cache'
         const CONFIG_CACHE_TS = 'banana_config_cache_time'
 
-        const PROMPTS_URL = 'https://raw.githubusercontent.com/glidea/banana-prompt-quicker/refs/heads/main/prompts.json'
+        const PROMPTS_URL = 'https://raw.githubusercontent.com/glidea/banana-prompt-quicker/main/prompts.json'
         const PROMPTS_CACHE_KEY = 'banana_prompts_cache'
         const PROMPTS_CACHE_TS = 'banana_prompts_cache_time'
 
         const CACHE_DURATION = 60 * 60 * 1000 // 60 min
 
-        async function getJsonWithCache(url, key, tsKey) {
+        async function getJsonWithCache(url, key, tsKey, defaultValue) {
             try {
                 const cache = await chrome.storage.local.get([key, tsKey])
                 const cached = cache[key]
@@ -171,14 +129,15 @@
                 await chrome.storage.local.set({ [key]: data, [tsKey]: now })
                 return data
             } catch (e) {
+                console.warn(`[Banana] Failed to fetch JSON from ${url}:`, e);
                 const cache = await chrome.storage.local.get([key])
-                return cache[key] || (url === CONFIG_URL ? null : [])
+                return cache[key] || defaultValue
             }
         }
 
         return {
             async get() {
-                return getJsonWithCache(CONFIG_URL, CONFIG_CACHE_KEY, CONFIG_CACHE_TS)
+                return getJsonWithCache(CONFIG_URL, CONFIG_CACHE_KEY, CONFIG_CACHE_TS, null)
             },
             async getSelectors(platform, type) {
                 const cfg = await this.get()
@@ -186,7 +145,7 @@
                 return selectors?.[platform]?.[type]
             },
             async getPrompts() {
-                return getJsonWithCache(PROMPTS_URL, PROMPTS_CACHE_KEY, PROMPTS_CACHE_TS)
+                return getJsonWithCache(PROMPTS_URL, PROMPTS_CACHE_KEY, PROMPTS_CACHE_TS, [])
             }
         }
     })()
@@ -225,12 +184,7 @@
 
     // 20251127: switch to ConfigManager (config.json) only — remove selectors.json legacy usage
     async function getRemoteSelector(platform, type) {
-        try {
-            return await ConfigManager.getSelectors(platform, type)
-        } catch (e) {
-            console.warn('获取远程 selector 失败:', e)
-            return null
-        }
+        return await ConfigManager.getSelectors(platform, type)
     }
 
     const FLASH_MODE_PROMPT = {
