@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             1.3.4
+// @version             1.3.5
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -1544,7 +1544,7 @@ OK，我想要：`,
                 const existingBtn = document.getElementById('banana-btn')
                 if (!existingBtn) this.initButton()
             })
-            observer.observe(document.getElementById('app-root'), { childList: true, subtree: true })
+            observer.observe(document.body, { childList: true, subtree: true })
         }
     }
 
@@ -1814,6 +1814,7 @@ OK，我想要：`,
     }
 
     // --- Initialization ---
+    const event = new Event("fire-modal");
     function init() {
         const hostname = window.location.hostname
         let adapter
@@ -1843,17 +1844,18 @@ OK，我想要：`,
             window.addEventListener('replacestate', handleNavigationChange)
         }
 
-        GM_registerMenuCommand("🍌 Insert Banana Prompts", function (event) {
+        document.body.addEventListener("fire-modal", () => {
             if (modal) {
                 modal.show()
             }
-        }, {
-            autoClose: true
-        });
+        })
     }
 
     GM_addStyle('#prompts-modal, #prompts-modal *, #prompts-modal *::before, #prompts-modal *::after{ font-family: Roboto,"Helvetica Neue",sans-serif; };');
     GM_addStyle('#prompts-search-section, #prompts-search-section *{ box-sizing: content-box; line-height: normal; };');
+    GM_registerMenuCommand("🍌 Insert Banana Prompts", () => document.body.dispatchEvent(event), {
+        autoClose: true
+    });
 
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
         init()
