@@ -119,19 +119,22 @@
         const CACHE_DURATION = 60 * 60 * 1000 // 60 min
 
         async function getJsonWithCache(url, key, tsKey, defaultValue) {
+            const cache = await chrome.storage.local.get([key, tsKey])
+            const cachedData = cache[key]
+            const cacheTimestamp = cache[tsKey]
+            const now = Date.now()
+
+            if (cachedData && cacheTimestamp && (now - cacheTimestamp) < CACHE_DURATION) {
+                return cachedData
+            }
+
             try {
-                const cache = await chrome.storage.local.get([key, tsKey])
-                const cached = cache[key]
-                const ts = cache[tsKey]
-                const now = Date.now()
-                if (cached && ts && (now - ts) < CACHE_DURATION) return cached
                 const data = await gmFetchJson(url)
                 await chrome.storage.local.set({ [key]: data, [tsKey]: now })
                 return data
             } catch (e) {
-                console.warn(`[Banana] Failed to fetch JSON from ${url}:`, e);
-                const cache = await chrome.storage.local.get([key])
-                return cache[key] || defaultValue
+                GM_log(`[Banana] Failed to fetch JSON from ${url}:`, e)
+                return cachedData || defaultValue
             }
         }
 
@@ -184,7 +187,7 @@
 
     // 20251127: switch to ConfigManager (config.json) only — remove selectors.json legacy usage
     async function getRemoteSelector(platform, type) {
-        return await ConfigManager.getSelectors(platform, type)
+        return ConfigManager.getSelectors(platform, type)
     }
 
     const FLASH_MODE_PROMPT = {
