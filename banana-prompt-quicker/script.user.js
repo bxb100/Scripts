@@ -130,7 +130,7 @@
             const cacheTimestamp = cache[tsKey]
             const now = Date.now()
 
-            if (cachedData && cacheTimestamp && (now - cacheTimestamp) < CACHE_DURATION) {
+            if (cachedData != null && cacheTimestamp && (now - cacheTimestamp) < CACHE_DURATION) {
                 return cachedData
             }
 
@@ -140,7 +140,7 @@
                 return data
             } catch (e) {
                 GM_log(`[Banana] Failed to fetch JSON from ${url}:`, e)
-                return cachedData || defaultValue
+                return cachedData ?? defaultValue
             }
         }
 
