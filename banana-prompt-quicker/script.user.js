@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             1.3.1
+// @version             1.3.2
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -10,7 +10,7 @@
 // @match               https://aistudio.google.com/*
 // @match               https://gemini.google.com/*
 // @match               https://*/*
-// @icon                https://www.gstatic.com/lamda/images/nano-banana_be0f093e11edd1639655e.svg
+// @icon                data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjgwMCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgY2xhc3M9Imljb25pZnkgaWNvbmlmeS0tbm90byI+PHBhdGggZD0iTTExOS4yMiA5NS4xMmMtMS4xNCAyLjM2LTUuOTEgMi4yMS04LjU0IDEuMzgtNi43Mi0yLjEyLTEwLjktNy45LTEwLjktNy45TDY1LjE0IDczLjlsLTEwLjYxLTUuNTdzLTIuMDYtMy41IDIuMDYtNi4xNyA3LjAxLTIuODcgNy4wMS0yLjg3bDExLjk0IDcuNnM3LjcxLTYgMTUuNTQtNi45MWM3LjQ4LS44NiAxNi43OSA1LjIyIDE5LjI0IDE2LjcgMS45OSA5LjMxIDUuMTQgMTIuNTkgNi4wOSAxMy44Ljk1IDEuMjIgMy43OSAyLjYyIDIuODEgNC42NHoiIGZpbGw9IiNmZjhlMDAiLz48cGF0aCBkPSJNNzcuNzIgMzIuMTVDNzQuNjUgMjEuOTkgNzAuNzcgMTAuMSA2NC45MSA2LjAzYy01LjE5LTMuNi0xMC4yNC0yLjk1LTEyLjY0LTEuMzggMCAwLTQuMzMgMS43Ny01LjQ3IDYuMjQtMS44OCA3LjM0LjU5IDE2LjE1IDIuMiAyNS4yNSAxLjYxIDkuMSAyLjQ1IDE1LjM2IDMuMTggMjIuNjcuMDcuNjYgMTIuMTYgMjIuMTggMTIuMTYgMjIuMThsOS42NSA1LjE3czcuMzctMTUuOTQgNy4yNi0xOC4xOWMtLjEtMi4yNi0xLjI5LTI4LjQtMy41My0zNS44MnoiIGZpbGw9IiNmZmU0YjQiLz48cGF0aCBkPSJNNTIuNTUgNjYuOTRjLS4xMyAyLjQzIDUuNzMgMjEuOCA1LjczIDIxLjhMNzQgODYuMTRzMTEuMTUtNi42IDExLjQ2LTE4LjU3Yy40OC0xOC4wNS0yLjYxLTI2LjU1LTQuODUtMzMuOTctMy4wOC0xMC4xNC05Ljk0LTIzLjUtMTUuNzUtMjcuNjQtMy40MS0yLjQzLTcuMTktMi43OS04Ljc0LTIuNDkgMCAwIDEwLjMyIDguMDggMTUuNTQgMjEuOXM2LjQ1IDI5Ljc5IDYuNDUgMjkuNzktMy44NCAyLjgzLTEyLjkgNC4xM2MtNyAxLjAxLTEzLjA0LS43LTEzLjA0LS43cy41NSA1LjI3LjM4IDguMzV6IiBmaWxsPSIjZmZlMjY1Ii8+PHBhdGggZD0iTTg1LjMzIDgzLjc1bC02LjI5LTEzLjE0LjM0LTQuNjhzMS4zNC0zLjkzLTcuMDMgMi40MmMtMy44OCAyLjk0LTYuMjIgOC4zNi02LjIyIDguMzZzLTEuMTgtMi45Mi01LjMyLTYuNzhjLTMuNjgtMy40Mi04LjYzLTUuMDgtOC42My01LjA4cy0xMC4yOC0yLTExLjQtMS4xM2MtNy4yNSA1LjY2LTEyLjU1IDEyLjU1LTEyLjU1IDEyLjU1TDIyLjkgOTYuNDJsLTguODYgNS40M3MyLjQyIDMuNTQgNS45MiAyLjIyYzIuNzMtMS4wMyA2LjExLTQuMTIgNy45My04LjAxIDIuNS01LjM1IDcuNzUtMTUuNDcgMTAuNDItMTguNjcgNS4xNi02LjE2IDEwLjIyLTguNDEgMTMuOTktNi42MiA0LjI5IDIuMDMuODYgMjIuMjkuODYgMjIuMjlsLTI3LjU4IDIzLjIxLS40NyAzLjE2czQuMDEgMy44NSAxNS4wNiAzLjQ5IDI1LjgzLTQuNDUgMzUuMTgtMTcuMmM4LjI1LTExLjI0IDkuOTgtMjEuOTcgOS45OC0yMS45N3oiIGZpbGw9IiNmZmE3MjYiLz48cGF0aCBkPSJNNjMuNTggODQuOTZjLjI0IDUuNTUtMy4yMiAxMy45Ni0xMS4yMiAyMC45Ny03Ljk5IDcuMDEtMTYuNDMgOS4zMy0yMS42NyA5LjczLTMuOC4yOS00LjkzLTEuODgtNC45My0xLjg4czcuNjYtNy4wNSAxMy4zNS0xMi43YzUuNC01LjM3IDExLjI4LTE2LjY1IDEyLjU2LTIxLjg0IDEuMjgtNS4xOS4xMi04LjY4LjEyLTguNjhzMi40OC42OSA2LjEzIDQuMzVjMy41NCAzLjU1IDUuNTMgNi45NyA1LjY2IDEwLjA1eiIgZmlsbD0iI2ZmYjgwMyIvPjxwYXRoIGQ9Ik0yOS40NSAxMTguNzRjLS44MyAxLjkzLTMuNjggMi4wMS00LjkyLjk0LTEuMTctMS4wMS0yLjMxLTMuMDItMS4xMy01LjI3Ljc4LTEuNDggMy4zNC0xLjg5IDQuNzgtLjc0czIuMDIgMy4zMiAxLjI3IDUuMDd6IiBmaWxsPSIjODc1YjU0Ii8+PHBhdGggZD0iTTIzLjc2IDk3Ljg0Yy0zLjI4IDQuNTUtNi41NyA1LjI0LTcuOTMgNS4zOS0xLjE5LjE0LTIuNDktMS4zOC0yLjM0LTIuNzguMTUtMS40IDIuNDUtMy4zNyAyLjczLTcuNjcuMjgtNC4zLS4wNi0yMC4wNyA4LjY5LTI5LjEzIDYuMTctNi4zOCAxMy43My00LjE4IDE4LjYxLTIuNDkgNS41IDEuOSA4LjY3IDMuNyA4LjY3IDMuN3MtNC41LS4zMS0xMi4yNiA1LjgxYy00LjUxIDMuNTYtNy4xNiA4LjQ1LTkuNjYgMTQuMDYtMS44IDQuMDYtNC4yIDkuOTEtNi41MSAxMy4xMXoiIGZpbGw9IiNmZWU0YjQiLz48cGF0aCBkPSJNMTExIDEwOS41OGMtLjkyIDEuODQtMy4xNyAyLjk4LTUuMTYgMi44OS00LjIxLS4xOC04LjA1LTIuMzUtMTIuMy03LjgzLTYuMDEtNy43Ni0xMS4yNC0yNi4zOC0xNS4xNi0zMS4zNC0yLjY1LTMuMzUtNS45NS01LjAxLTUuOTUtNS4wMXMxLjgyLTEuNTQgMy42NC0yLjQ5YzEuODItLjk1IDYuMjItLjUgNi4yMi0uNWwxOC43OCAzMC4xOCA5LjkzIDE0LjF6IiBmaWxsPSIjZmViODA0Ii8+PHBhdGggZD0iTTEwMC4zOSA2OC40NmM0LjEyIDUuODkgNC42NiAxMS4wNiA1LjI4IDE2LjM0LjU2IDQuNzcgMS43MSAxNC44IDMuNDQgMTguMDcgMS43NCAzLjI3IDMuNDMgNS40IDEuNTYgNy4zOXMtNy4zNyAxLjI4LTExLjMyLTMuMDJjLTMuMTgtMy40Ny00Ljk0LTcuMjUtNy4zMy0xMi44LTIuMzktNS41NS01LjkxLTE4LjY1LTEwLjQ4LTI0LjU3LTIuOTItMy43OC01LjgzLTMuODktNS44My0zLjg5czMuODUtMy4xNCAxMS4yLTMuMjJjNi41OS0uMDcgMTAuMDUuOCAxMy40OCA1Ljd6IiBmaWxsPSIjZmZlNGI0Ii8+PC9zdmc+
 // @grant               GM_getValue
 // @grant               GM_setValue
 // @grant               GM_xmlhttpRequest
@@ -36,7 +36,7 @@
     * MIT License
     * source: https://github.com/Tampermonkey/tampermonkey/issues/1334#issuecomment-2442399033
     *
-    * fix https://copilot.microsoft.com/ by CY Fung
+    * Fix https://copilot.microsoft.com/ by CY Fung
     * source: https://greasyfork.org/zh-CN/scripts/522884-default-trusted-types-policy-for-all-pages
     */
     (function () {
@@ -936,9 +936,28 @@ OK，我想要：`,
             }
 
             const prevBtn = createBtn('上一页', this.currentPage === 1, () => this.changePage(-1))
-            const pageInfo = document.createElement('span')
-            pageInfo.textContent = `${this.currentPage} / ${totalPages}`
+
+            const pageInfo = document.createElement('div')
+            const editablePageBtn = document.createElement('input')
+            editablePageBtn.id = 'current-page-input'
+            editablePageBtn.type = 'number'
+            editablePageBtn.value = this.currentPage
+            editablePageBtn.min = 1
+            editablePageBtn.max = totalPages
+            editablePageBtn.style.cssText = `width: ${mobile ? '50px' : '40px'}; padding: ${mobile ? '8px' : '6px'}; border: 1px solid ${colors.border}; border-radius: 12px; background: ${colors.surface}; text-align: center; outline: none; box-sizing: border-box; margin: 0 8px;`
+            editablePageBtn.onchange = () => {
+                let val = parseInt(editablePageBtn.value)
+                if (isNaN(val) || val < 1) val = 1
+                if (val > totalPages) val = totalPages
+                this.currentPage = val
+                this.renderCurrentPage()
+            }
+            const otherPageInfo = document.createElement('span')
+            otherPageInfo.textContent = `/ ${totalPages}`
             pageInfo.style.cssText = `color: ${colors.text}; font-size: ${mobile ? '14px' : '13px'}; font-weight: 500;`
+            pageInfo.appendChild(editablePageBtn)
+            pageInfo.appendChild(otherPageInfo)
+
             const nextBtn = createBtn('下一页', this.currentPage === totalPages, () => this.changePage(1))
 
             const controlsWrapper = document.createElement('div')
@@ -1019,14 +1038,12 @@ OK，我想要：`,
                 })
             }
 
-            const wrapper = document.createElement('div')
-            wrapper.onclick = () => this.adapter.insertPrompt(prompt.prompt)
-
-            GM_addElement(wrapper, 'img', {
+            const img = GM_addElement('img', {
                 src: prompt.preview,
                 alt: prompt.title,
-                style: `width: 100%; height: ${mobile ? '180px' : '200px'}; object-fit: cover; flex-shrink: 0;`,
+                style: `width: 100%; height: ${mobile ? '180px' : '200px'}; object-fit: cover; flex-shrink: 0;`
             })
+            img.onclick = () => this.adapter.insertPrompt(prompt.prompt)
 
             const favoriteBtn = document.createElement('button')
             const favBtnBg = isFavorite ? 'rgba(255,193,7,0.9)' : theme === 'dark' ? 'rgba(48,49,52,0.9)' : 'rgba(255,255,255,0.9)'
@@ -1106,7 +1123,7 @@ OK，我想要：`,
                 card.appendChild(deleteBtn)
             }
 
-            card.appendChild(wrapper)
+            card.appendChild(img)
             card.appendChild(favoriteBtn)
             card.appendChild(content)
 
