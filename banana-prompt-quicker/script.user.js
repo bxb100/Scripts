@@ -108,13 +108,19 @@
 
     // --- ConfigManager (unified prompts + config) ---
     const ConfigManager = (() => {
-        const CONFIG_URL = 'https://raw.githubusercontent.com/glidea/banana-prompt-quicker/main/config.json'
-        const CONFIG_CACHE_KEY = 'banana_config_cache'
-        const CONFIG_CACHE_TS = 'banana_config_cache_time'
+        const configDetails = {
+            url: 'https://raw.githubusercontent.com/glidea/banana-prompt-quicker/main/config.json',
+            cacheKey: 'banana_config_cache',
+            cacheTsKey: 'banana_config_cache_time',
+            defaultValue: null
+        }
 
-        const PROMPTS_URL = 'https://raw.githubusercontent.com/glidea/banana-prompt-quicker/main/prompts.json'
-        const PROMPTS_CACHE_KEY = 'banana_prompts_cache'
-        const PROMPTS_CACHE_TS = 'banana_prompts_cache_time'
+        const promptsDetails = {
+            url: 'https://raw.githubusercontent.com/glidea/banana-prompt-quicker/main/prompts.json',
+            cacheKey: 'banana_prompts_cache',
+            cacheTsKey: 'banana_prompts_cache_time',
+            defaultValue: []
+        }
 
         const CACHE_DURATION = 60 * 60 * 1000 // 60 min
 
@@ -140,7 +146,12 @@
 
         return {
             async get() {
-                return getJsonWithCache(CONFIG_URL, CONFIG_CACHE_KEY, CONFIG_CACHE_TS, null)
+                return getJsonWithCache(
+                    configDetails.url,
+                    configDetails.cacheKey,
+                    configDetails.cacheTsKey,
+                    configDetails.defaultValue
+                )
             },
             async getSelectors(platform, type) {
                 const cfg = await this.get()
@@ -148,7 +159,12 @@
                 return selectors?.[platform]?.[type]
             },
             async getPrompts() {
-                return getJsonWithCache(PROMPTS_URL, PROMPTS_CACHE_KEY, PROMPTS_CACHE_TS, [])
+                return getJsonWithCache(
+                    promptsDetails.url,
+                    promptsDetails.cacheKey,
+                    promptsDetails.cacheTsKey,
+                    promptsDetails.defaultValue
+                )
             }
         }
     })()
@@ -635,8 +651,6 @@ OK，我想要：`,
         createContent(colors, mobile) {
             const container = document.createElement('div')
             container.style.cssText = 'flex: 1; display: flex; flex-direction: column; overflow: hidden;'
-
-
             const scrollArea = document.createElement('div')
             scrollArea.id = 'prompts-scroll-area'
             scrollArea.style.cssText = `flex: 1; overflow-y: auto; padding: ${mobile ? '16px' : '20px 24px'}; -webkit-overflow-scrolling: touch;`
