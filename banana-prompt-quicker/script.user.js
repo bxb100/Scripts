@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             1.3.5
+// @version             1.3.6
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -442,7 +442,6 @@ OK，我想要：`,
             return window.innerWidth <= 768
         }
 
-
         createModal() {
             const colors = this.adapter.getThemeColors()
             const mobile = this.isMobile()
@@ -651,6 +650,7 @@ OK，我想要：`,
         createContent(colors, mobile) {
             const container = document.createElement('div')
             container.style.cssText = 'flex: 1; display: flex; flex-direction: column; overflow: hidden;'
+
             const scrollArea = document.createElement('div')
             scrollArea.id = 'prompts-scroll-area'
             scrollArea.style.cssText = `flex: 1; overflow-y: auto; padding: ${mobile ? '16px' : '20px 24px'}; -webkit-overflow-scrolling: touch;`
