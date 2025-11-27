@@ -110,7 +110,7 @@
         const GITHUB_PROMPTS_URL = 'https://raw.githubusercontent.com/glidea/banana-prompt-quicker/refs/heads/main/prompts.json';
         const CACHE_KEY = 'banana_prompts_cache';
         const CACHE_TIMESTAMP_KEY = 'banana_prompts_cache_time';
-        const CACHE_DURATION = 2 * 60 * 1000; // 2 min
+        const CACHE_DURATION = 60 * 60 * 1000; // 60 min per upstream change
 
         return {
             async get() {
@@ -148,6 +148,59 @@
         }
     })()
 
+    // --- ConfigManager (extension/config.js) ---
+    const ConfigManager = (() => {
+        const CONFIG_URL = 'https://raw.githubusercontent.com/glidea/banana-prompt-quicker/main/config.json'
+        const CACHE_KEY = 'banana_config_cache'
+        const CACHE_TIMESTAMP_KEY = 'banana_config_cache_time'
+        const CACHE_DURATION = 60 * 60 * 1000 // 60 min
+
+        return {
+            async get() {
+                try {
+                    const cache = await chrome.storage.local.get([CACHE_KEY, CACHE_TIMESTAMP_KEY])
+                    const cached = cache[CACHE_KEY]
+                    const ts = cache[CACHE_TIMESTAMP_KEY]
+                    const now = Date.now()
+                    if (cached && ts && (now - ts) < CACHE_DURATION) {
+                        return cached
+                    }
+                    const cfg = await gmFetchJson(CONFIG_URL)
+                    await chrome.storage.local.set({ [CACHE_KEY]: cfg, [CACHE_TIMESTAMP_KEY]: now })
+                    return cfg
+                } catch (e) {
+                    // fallback to stale cache
+                    const cache = await chrome.storage.local.get([CACHE_KEY])
+                    return cache[CACHE_KEY] || null
+                }
+            },
+            async getSelectors(platform, type) {
+                const cfg = await this.get()
+                const selectors = cfg && (cfg.selectors || cfg.selector)
+                return selectors?.[platform]?.[type]
+            },
+            async getAnnouncement() {
+                const cfg = await this.get()
+                const ann = cfg && cfg.announcements
+                if (!ann) return null
+                // support object or array
+                if (Array.isArray(ann)) {
+                    const now = Date.now()
+                    const item = ann.find(a => {
+                        if (!a) return false
+                        const start = a.start ? Date.parse(a.start) : null
+                        const end = a.end ? Date.parse(a.end) : null
+                        const withinStart = start ? now >= start : true
+                        const withinEnd = end ? now <= end : true
+                        return withinStart && withinEnd
+                    })
+                    return item || null
+                }
+                return ann
+            }
+        }
+    })()
+
     // 默认主题颜色配置
     function getDefaultThemeColors(theme = 'light') {
         if (theme === 'dark') {
@@ -180,33 +233,31 @@
     }
 
 
-    // 20251125 新增: 获取远程 selector 配置
+    // 20251127: use ConfigManager (config.json) with fallback to old selectors.json
     async function getRemoteSelector(platform, type) {
-        const CACHE_KEY = 'selector_config'
-        const CACHE_DURATION = 2 * 60 * 1000 // 2分钟
-        const CONFIG_URL = 'https://raw.githubusercontent.com/glidea/banana-prompt-quicker/main/selectors.json'
-        // 1. 尝试从缓存获取
+        // prefer config.json -> selectors section
+        try {
+            const v = await ConfigManager.getSelectors(platform, type)
+            if (v) return v
+        } catch (e) {
+            // ignore and try legacy path
+        }
+        const CACHE_KEY = 'selector_config_legacy'
+        const CACHE_DURATION = 60 * 60 * 1000 // 60 min
+        const LEGACY_URL = 'https://raw.githubusercontent.com/glidea/banana-prompt-quicker/main/selectors.json'
         const cached = await chrome.storage.local.get(CACHE_KEY)
         if (cached[CACHE_KEY]) {
             const { data, timestamp } = cached[CACHE_KEY]
             if (Date.now() - timestamp < CACHE_DURATION) {
-                return data[platform]?.[type]
+                return data?.[platform]?.[type]
             }
         }
-        // 2. 请求远程配置
         try {
-            const config = await gmFetchJson(CONFIG_URL)
-            // 缓存配置
-            await chrome.storage.local.set({
-                [CACHE_KEY]: {
-                    data: config,
-                    timestamp: Date.now()
-                }
-            })
-            return config[platform]?.[type]
+            const legacy = await gmFetchJson(LEGACY_URL)
+            await chrome.storage.local.set({ [CACHE_KEY]: { data: legacy, timestamp: Date.now() } })
+            return legacy?.[platform]?.[type]
         } catch (error) {
             console.warn('获取远程 selector 失败:', error)
-            // 降级:使用过期缓存
             return cached[CACHE_KEY]?.data?.[platform]?.[type]
         }
     }
@@ -420,6 +471,8 @@ OK，我想要：`,
             if (!this.modal) {
                 this.modal = this.createModal()
                 document.body.appendChild(this.modal)
+                // async initialize announcements banner
+                this.initAnnouncements && this.initAnnouncements()
             }
             this.modal.style.display = 'flex'
             if (!this._isInitialized) {
@@ -448,6 +501,47 @@ OK，我想要：`,
 
         isMobile() {
             return window.innerWidth <= 768
+        }
+
+        async initAnnouncements() {
+            try {
+                const data = await ConfigManager.getAnnouncement()
+                const bar = document.getElementById('announcements-container')
+                if (!bar) return
+                if (!data) { bar.style.display = 'none'; return }
+                const colors = this.adapter.getThemeColors()
+                const text = data.message || data.text || data.title
+                const link = data.link || data.url
+                const content = document.createElement('div')
+                content.style.cssText = `display:flex; align-items:center; gap:8px; background:${colors.surface}; border:1px solid ${colors.border}; color:${colors.text}; padding:8px 12px; border-radius:12px;`
+                const icon = document.createElement('span')
+                icon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 16h-1v-4h-1"/><path d="M12 8h.01"/><circle cx="12" cy="12" r="10"/></svg>'
+                icon.style.cssText = `opacity:.7;`
+                const msg = document.createElement('div')
+                msg.style.cssText = 'flex:1; font-size:12px;'
+                msg.textContent = text || ''
+                if (link) {
+                    const a = document.createElement('a')
+                    a.href = link
+                    a.target = '_blank'
+                    a.rel = 'noopener noreferrer'
+                    a.textContent = '查看'
+                    a.style.cssText = `margin-left:8px; color:${colors.primary}; text-decoration:underline;`
+                    msg.appendChild(a)
+                }
+                const close = document.createElement('button')
+                close.textContent = '×'
+                close.style.cssText = `border:none; background:transparent; color:${colors.textSecondary}; cursor:pointer; font-size:16px;`
+                close.onclick = () => { bar.style.display = 'none' }
+                content.appendChild(icon)
+                content.appendChild(msg)
+                content.appendChild(close)
+                bar.innerHTML = ''
+                bar.appendChild(content)
+                bar.style.display = 'block'
+            } catch (e) {
+                // silent
+            }
         }
 
         createModal() {
@@ -658,6 +752,12 @@ OK，我想要：`,
         createContent(colors, mobile) {
             const container = document.createElement('div')
             container.style.cssText = 'flex: 1; display: flex; flex-direction: column; overflow: hidden;'
+
+            // announcements placeholder
+            const ann = document.createElement('div')
+            ann.id = 'announcements-container'
+            ann.style.cssText = `display:none; padding: ${mobile ? '10px 12px' : '10px 16px'}; border-bottom: 1px dashed ${colors.border};`
+            container.appendChild(ann)
 
             const scrollArea = document.createElement('div')
             scrollArea.id = 'prompts-scroll-area'
