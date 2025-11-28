@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             1.3.8
+// @version             1.4.1
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -27,10 +27,10 @@
 // @grant               GM_registerMenuCommand
 // @grant               GM_addStyle
 // @connect             raw.githubusercontent.com
-// @source              https://github.com/bxb100/Scripts/tree/main/banana-prompt-quicker
-// @homepage            https://github.com/bxb100/Scripts/tree/main/banana-prompt-quicker
-// @homepageURL         https://github.com/bxb100/Scripts/tree/main/banana-prompt-quicker
-// @supportURL          https://github.com/bxb100/Scripts/issues
+// @source              https://github.com/glidea/banana-prompt-quicker
+// @homepage            https://github.com/glidea/banana-prompt-quicker
+// @homepageURL         https://github.com/glidea/banana-prompt-quicker
+// @supportURL          https://github.com/glidea/banana-prompt-quicker/issues
 // @downloadURL         https://github.com/bxb100/Scripts/raw/refs/heads/main/banana-prompt-quicker/script.user.js
 // @updateURL           https://github.com/bxb100/Scripts/raw/refs/heads/main/banana-prompt-quicker/script.user.js
 // ==/UserScript==
