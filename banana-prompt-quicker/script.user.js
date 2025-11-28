@@ -532,7 +532,7 @@ OK，我想要：`,
 
             const dropdownTrigger = document.createElement('div')
             dropdownTrigger.id = 'category-dropdown-trigger'
-            dropdownTrigger.style.cssText = `padding: ${mobile ? '10px 14px' : '8px 12px'}; border: 1px solid ${colors.border}; border-radius: 16px; background: ${colors.surface}; color: ${colors.text}; font-size: ${mobile ? '14px' : '13px'}; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; width: 60px; justify-content: space-between; user-select: none;`
+            dropdownTrigger.style.cssText = `padding: ${mobile ? '10px 14px' : '8px 12px'}; border: 1px solid ${colors.border}; border-radius: 16px; background: ${colors.surface}; color: ${colors.text}; font-size: ${mobile ? '14px' : '13px'}; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; min-width: 70px; justify-content: space-between; user-select: none;`
 
             const triggerText = document.createElement('span')
             triggerText.id = 'category-trigger-text'
@@ -1167,12 +1167,11 @@ OK，我想要：`,
             }
 
             const dialog = document.createElement('div')
-            dialog.style.cssText = `background: ${colors.surface}; padding: ${mobile ? '28px' : '32px'}; border-radius: 20px; width: ${mobile ? '90%' : '500px'}; max-width: 90%; box-shadow: 0 20px 60px ${colors.shadow}; display: flex; flex-direction: column; gap: 20px; color: ${colors.text};`
-            dialog.onclick = (e) => e.stopPropagation()
+            dialog.style.cssText = `background: ${colors.surface}; padding: ${mobile ? '24px' : '32px'}; border-radius: 20px; width: ${mobile ? '90%' : '480px'}; max-width: 90%; box-shadow: 0 20px 60px ${colors.shadow}; display: flex; flex-direction: column; gap: 16px; color: ${colors.text};`
 
             const title = document.createElement('h3')
             title.textContent = existingPrompt ? '编辑自定义 Prompt' : '添加自定义 Prompt'
-            title.style.cssText = 'margin: 0 0 8px 0; font-size: 20px; font-weight: 600;'
+            title.style.cssText = 'margin: 0 0 4px 0; font-size: 20px; font-weight: 600;'
 
             const createInput = (placeholder, isTextarea = false) => {
                 const input = document.createElement(isTextarea ? 'textarea' : 'input')
@@ -1192,35 +1191,85 @@ OK，我想要：`,
             const titleInput = createInput('标题')
             if (existingPrompt) titleInput.value = existingPrompt.title
 
+            // Mode Selection (Moved up)
+            let selectedMode = existingPrompt?.mode || 'generate'
+            const createModeSelection = () => {
+                const modeContainer = document.createElement('div')
+
+                modeContainer.style.cssText = `display: flex; background: ${colors.inputBg}; padding: 4px; border-radius: 10px; border: 1px solid ${colors.inputBorder};`
+                const createOption = (value, label, iconSvg) => {
+                    const isSelected = selectedMode === value
+
+                    const option = document.createElement('div')
+                    option.style.cssText = `flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 13px; transition: all 0.2s; font-weight: ${isSelected ? '600' : '400'}; color: ${isSelected ? colors.text : colors.textSecondary}; background: ${isSelected ? colors.surface : 'transparent'}; box-shadow: ${isSelected ? `0 2px 8px ${colors.shadow}` : 'none'};`
+                    option.onclick = () => {
+                        selectedMode = value
+                        modeContainer.parentNode.replaceChild(createModeSelection(), modeContainer)
+                    }
+
+                    const icon = document.createElement('span')
+                    icon.innerHTML = iconSvg
+                    icon.style.cssText = 'display: flex; align-items: center;'
+
+                    option.appendChild(icon)
+                    option.appendChild(document.createTextNode(label))
+                    return option
+                }
+                const generateIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`
+                const editIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`
+                modeContainer.appendChild(createOption('generate', '文生图', generateIcon))
+                modeContainer.appendChild(createOption('edit', '编辑', editIcon))
+                return modeContainer
+            }
+            const modeContainer = createModeSelection()
+
             // Image Upload UI
             const imageContainer = document.createElement('div')
-            imageContainer.style.cssText = `display: flex; align-items: center; gap: 12px; width: 100%;`
+            imageContainer.style.cssText = `width: 100%; height: 140px; border: 1px dashed ${colors.border}; border-radius: 12px; background: ${colors.inputBg}; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; transition: all 0.2s;`
 
             const fileInput = document.createElement('input')
             fileInput.type = 'file'
             fileInput.accept = 'image/*'
             fileInput.style.display = 'none'
 
-            const previewBtn = document.createElement('div')
-            previewBtn.style.cssText = `width: 60px; height: 60px; border-radius: 12px; border: 1px dashed ${colors.border}; background: ${colors.inputBg}; cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; flex-shrink: 0; transition: all 0.2s;`
-
             const placeholderIcon = document.createElement('span')
-            placeholderIcon.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${colors.textSecondary}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`
-            previewBtn.appendChild(placeholderIcon)
+            placeholderIcon.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="${colors.textSecondary}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`
+            placeholderIcon.style.cssText = 'margin-bottom: 8px'
+
+            const placeholderText = document.createElement('span')
+            placeholderText.style.cssText = `font-size: 13px; color: ${colors.textSecondary}; font-weight: 500;`
+            placeholderText.textContent = '点击上传封面图'
+
+            const placeholderContainer = document.createElement('div')
+            placeholderContainer.style.cssText = 'display: flex; flex-direction: column; align-items: center; pointer-events: none;'
+            placeholderContainer.appendChild(placeholderIcon)
+            placeholderContainer.appendChild(placeholderText)
 
             const previewImg = document.createElement('img')
-            previewImg.style.cssText = `width: 100%; height: 100%; object-fit: cover; display: none;`
-            previewBtn.appendChild(previewImg)
+            previewImg.style.cssText = `width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; top: 0; left: 0;`
 
-            const uploadTip = document.createElement('span')
-            uploadTip.textContent = '上传封面 (可选)'
-            uploadTip.style.cssText = `font-size: 13px; color: ${colors.textSecondary};`
+            const clearBtn = document.createElement('button')
+            clearBtn.innerHTML =
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>'
+            clearBtn.style.cssText = `position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 50%; background: rgba(0,0,0,0.5); color: white; border: none; cursor: pointer; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); transition: all 0.2s; z-index: 10;`
+            clearBtn.onclick = () => {
+                fileInput.value = ''
+                selectedFile = null
+                previewImg.src = ''
+                previewImg.style.display = 'none'
+                placeholderContainer.style.display = 'flex'
+                clearBtn.style.display = 'none'
+                imageContainer.style.borderStyle = 'dashed'
+            }
+            clearBtn.onmouseenter = (e) => (e.target.style.background = 'rgba(0,0,0,0.7)')
+            clearBtn.onmouseleave = (e) => (e.target.style.background = 'rgba(0,0,0,0.5)')
 
-            const clearImgBtn = document.createElement('button')
-            clearImgBtn.innerHTML = '×'
-            clearImgBtn.style.cssText = `margin-left: auto; width: 24px; height: 24px; border-radius: 50%; background: ${colors.border}; color: ${colors.text}; border: none; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 16px; padding-bottom: 2px;`
-
-            previewBtn.onclick = () => fileInput.click()
+            // Click handler for container
+            imageContainer.onclick = (e) => {
+                if (e.target !== clearBtn && !clearBtn.contains(e.target)) {
+                    fileInput.click()
+                }
+            }
 
             let selectedFile = null
 
@@ -1228,9 +1277,10 @@ OK，我想要：`,
             if (existingPrompt?.preview && !existingPrompt.preview.includes('gstatic.com')) {
                 previewImg.src = existingPrompt.preview
                 previewImg.style.display = 'block'
-                placeholderIcon.style.display = 'none'
-                previewBtn.style.borderStyle = 'solid'
-                clearImgBtn.style.display = 'flex'
+                placeholderContainer.style.display = 'none'
+                imageContainer.style.borderStyle = 'solid'
+                clearBtn.style.display = 'flex'
+                this.state.previewUrl = existingPrompt.preview
             }
 
             fileInput.onchange = (e) => {
@@ -1242,28 +1292,31 @@ OK，我想要：`,
                     reader.onload = (evt) => {
                         previewImg.src = evt.target.result
                         previewImg.style.display = 'block'
-                        placeholderIcon.style.display = 'none'
-                        previewBtn.style.borderStyle = 'solid'
-                        clearImgBtn.style.display = 'flex'
+                        placeholderContainer.style.display = 'none'
+                        imageContainer.style.borderStyle = 'solid'
+                        clearBtn.style.display = 'flex'
                     }
                     reader.readAsDataURL(file)
                 }
             }
 
-            clearImgBtn.onclick = () => {
-                fileInput.value = ''
-                selectedFile = null
-                previewImg.src = ''
-                previewImg.style.display = 'none'
-                placeholderIcon.style.display = 'block'
-                previewBtn.style.borderStyle = 'dashed'
-                clearImgBtn.style.display = 'none'
+            imageContainer.onmouseenter = (e) => {
+                if (!selectedFile && !previewImg.src) {
+                    e.target.style.borderColor = colors.primary
+                    e.target.style.background = colors.surfaceHover
+                }
+            }
+            imageContainer.onmouseleave = (e) => {
+                if (!selectedFile && !previewImg.src) {
+                    e.target.style.borderColor = colors.border
+                    e.target.style.background = colors.inputBg
+                }
             }
 
             imageContainer.appendChild(fileInput)
-            imageContainer.appendChild(previewBtn)
-            imageContainer.appendChild(uploadTip)
-            imageContainer.appendChild(clearImgBtn)
+            imageContainer.appendChild(placeholderContainer)
+            imageContainer.appendChild(previewImg)
+            imageContainer.appendChild(clearBtn)
 
             const promptInput = createInput('Prompt 内容', true)
             if (existingPrompt) promptInput.value = existingPrompt.prompt
@@ -1332,30 +1385,6 @@ OK，我想要：`,
 
             categoryContainer.appendChild(categoryTrigger)
             categoryContainer.appendChild(categoryOptions)
-
-            const modeContainer = document.createElement('div')
-            modeContainer.style.display = 'flex'
-            modeContainer.style.gap = '16px'
-
-            let selectedMode = existingPrompt?.mode || 'generate'
-            const createRadio = (value, label) => {
-                const labelEl = document.createElement('label')
-                labelEl.style.cssText = 'display: flex; align-items: center; gap: 6px; cursor: pointer;'
-                const radio = document.createElement('input')
-                radio.type = 'radio'
-                radio.name = 'prompt-mode'
-                radio.value = value
-                radio.checked = value === selectedMode
-                radio.onchange = () => {
-                    selectedMode = value
-                }
-                labelEl.appendChild(radio)
-                labelEl.appendChild(document.createTextNode(label))
-                return labelEl
-            }
-
-            modeContainer.appendChild(createRadio('generate', '生图'))
-            modeContainer.appendChild(createRadio('edit', '编辑'))
 
             const btnContainer = document.createElement('div')
             btnContainer.style.cssText = 'display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;'
