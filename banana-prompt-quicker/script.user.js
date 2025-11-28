@@ -169,6 +169,7 @@
                 inputBg: '#1c1c1e',
                 inputBorder: '#38383a',
                 shadow: 'rgba(0,0,0,0.5)',
+                surfaceHover: '#2c2c2e',
             }
         }
 
@@ -183,6 +184,7 @@
             inputBg: '#ffffff',
             inputBorder: '#d2d2d7',
             shadow: 'rgba(0,0,0,0.1)',
+            surfaceHover: '#e8e8ed',
         }
     }
 
@@ -397,14 +399,10 @@ OK，我想要：`,
             if (!this._isInitialized) {
                 // 首次显示：完整初始化
                 this.updateCategoryDropdown()
-                this.applyFilters(true)
-                this._isInitialized = true
+                this.applyFilters(true).then(() => (this._isInitialized = true))
             } else {
                 // 重新显示：只刷新数据，保留状态
-                this.loadPrompts().then(() => {
-                    // 刷新当前页面显示（保持在当前页）
-                    this.renderCurrentPage()
-                })
+                this.loadPrompts()
             }
             // 添加键盘事件监听器
             document.addEventListener('keydown', this.keyboardHandler)
@@ -1248,7 +1246,7 @@ OK，我想要：`,
             clearBtn.onclick = () => {
                 fileInput.value = ''
                 selectedFile = null
-                previewImg.src = ''
+                previewImg.removeAttribute('src')
                 previewImg.style.display = 'none'
                 placeholderContainer.style.display = 'flex'
                 clearBtn.style.display = 'none'
