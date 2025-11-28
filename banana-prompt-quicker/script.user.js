@@ -259,14 +259,11 @@ OK，我想要：`,
                 }
             })
 
-            this.updateCategoryDropdown()
-            this.applyFilters()
-
             this.ensureRandomValues()
 
             this.updateCategoryDropdown()
             // 只在首次加载或有必要时重置页码
-            this.applyFilters(!this._isInitialized)
+            await this.applyFilters(!this._isInitialized)
         }
 
         ensureRandomValues() {
