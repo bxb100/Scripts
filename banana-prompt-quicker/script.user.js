@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             1.3.7
+// @version             1.4.0
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -33,81 +33,74 @@
 // ==/UserScript==
 //
 
-(function () {
-    'use strict';
+;(function () {
+    'use strict'
 
     /*!
-    * Credit by Jan Biniok
-    * MIT License
-    * source: https://github.com/Tampermonkey/tampermonkey/issues/1334#issuecomment-2442399033
-    *
-    * Fix https://copilot.microsoft.com/ by CY Fung
-    * source: https://greasyfork.org/zh-CN/scripts/522884-default-trusted-types-policy-for-all-pages
-    */
-    (function () {
-        if (typeof window != "undefined" &&
-            ('trustedTypes' in window) &&
-            ('createPolicy' in window.trustedTypes) &&
-            (typeof window.trustedTypes.createPolicy == "function") &&
-            window.trustedTypes.defaultPolicy == null
-        ) {
-            window.trustedTypes.createPolicy('default', { createScriptURL: s => s, createScript: s => s, createHTML: s => s })
-        } else {
-            setTimeout(window.testTrusted, 1000);
+     * Credit by Jan Biniok
+     * MIT License
+     * source: https://github.com/Tampermonkey/tampermonkey/issues/1334#issuecomment-2442399033
+     *
+     * Fix https://copilot.microsoft.com/ by CY Fung
+     * source: https://greasyfork.org/zh-CN/scripts/522884-default-trusted-types-policy-for-all-pages
+     */
+    ;(function () {
+        if (typeof window != 'undefined' && 'trustedTypes' in window && 'createPolicy' in window.trustedTypes && typeof window.trustedTypes.createPolicy == 'function' && window.trustedTypes.defaultPolicy == null) {
+            window.trustedTypes.createPolicy('default', { createScriptURL: (s) => s, createScript: (s) => s, createHTML: (s) => s })
         }
     })()
-
 
     // --- Polyfills for Chrome Extension API ---
     // 模拟 chrome.storage 使用 GM_storage
     const mockStorage = {
-        get: (keys) => new Promise((resolve) => {
-            let result = {};
-            const keyList = Array.isArray(keys) ? keys : [keys];
-            keyList.forEach(key => {
-                result[key] = GM_getValue(key);
-            });
-            resolve(result);
-        }),
-        set: (items) => new Promise((resolve) => {
-            for (const [key, value] of Object.entries(items)) {
-                GM_setValue(key, value);
-            }
-            resolve();
-        })
-    };
+        get: (keys) =>
+            new Promise((resolve) => {
+                let result = {}
+                const keyList = Array.isArray(keys) ? keys : [keys]
+                keyList.forEach((key) => {
+                    result[key] = GM_getValue(key)
+                })
+                resolve(result)
+            }),
+        set: (items) =>
+            new Promise((resolve) => {
+                for (const [key, value] of Object.entries(items)) {
+                    GM_setValue(key, value)
+                }
+                resolve()
+            }),
+    }
 
     const chrome = {
         storage: {
             local: mockStorage,
-            sync: mockStorage // Tampermonkey 统一使用本地存储
-        }
-    };
+            sync: mockStorage, // Tampermonkey 统一使用本地存储
+        },
+    }
 
     // 辅助函数：使用 GM_xmlhttpRequest 替代 fetch 以避免 CSP 问题
     function gmFetchJson(url) {
         return new Promise((resolve, reject) => {
             GM_xmlhttpRequest({
-                method: "GET",
+                method: 'GET',
                 url: url,
                 onload: function (response) {
                     if (response.status >= 200 && response.status < 300) {
                         try {
-                            resolve(JSON.parse(response.responseText));
+                            resolve(JSON.parse(response.responseText))
                         } catch (e) {
-                            reject(e);
+                            reject(e)
                         }
                     } else {
-                        reject(new Error(`HTTP error! status: ${response.status}`));
+                        reject(new Error(`HTTP error! status: ${response.status}`))
                     }
                 },
                 onerror: function (err) {
-                    reject(err);
-                }
-            });
-        });
+                    reject(err)
+                },
+            })
+        })
     }
-
 
     // --- ConfigManager (unified prompts + config) ---
     const ConfigManager = (() => {
@@ -115,14 +108,14 @@
             url: 'https://raw.githubusercontent.com/glidea/banana-prompt-quicker/main/config.json',
             cacheKey: 'banana_config_cache',
             cacheTsKey: 'banana_config_cache_time',
-            defaultValue: null
+            defaultValue: null,
         }
 
         const promptsDetails = {
             url: 'https://raw.githubusercontent.com/glidea/banana-prompt-quicker/main/prompts.json',
             cacheKey: 'banana_prompts_cache',
             cacheTsKey: 'banana_prompts_cache_time',
-            defaultValue: []
+            defaultValue: [],
         }
 
         const CACHE_DURATION = 60 * 60 * 1000 // 60 min
@@ -133,7 +126,7 @@
             const cacheTimestamp = cache[tsKey]
             const now = Date.now()
 
-            if (cachedData != null && cacheTimestamp && (now - cacheTimestamp) < CACHE_DURATION) {
+            if (cachedData != null && cacheTimestamp && now - cacheTimestamp < CACHE_DURATION) {
                 return cachedData
             }
 
@@ -149,12 +142,7 @@
 
         return {
             async get() {
-                return getJsonWithCache(
-                    configDetails.url,
-                    configDetails.cacheKey,
-                    configDetails.cacheTsKey,
-                    configDetails.defaultValue
-                )
+                return getJsonWithCache(configDetails.url, configDetails.cacheKey, configDetails.cacheTsKey, configDetails.defaultValue)
             },
             async getSelectors(platform, type) {
                 const cfg = await this.get()
@@ -162,13 +150,8 @@
                 return selectors?.[platform]?.[type]
             },
             async getPrompts() {
-                return getJsonWithCache(
-                    promptsDetails.url,
-                    promptsDetails.cacheKey,
-                    promptsDetails.cacheTsKey,
-                    promptsDetails.defaultValue
-                )
-            }
+                return getJsonWithCache(promptsDetails.url, promptsDetails.cacheKey, promptsDetails.cacheTsKey, promptsDetails.defaultValue)
+            },
         }
     })()
 
@@ -185,7 +168,8 @@
                 hover: '#2c2c2e',
                 inputBg: '#1c1c1e',
                 inputBorder: '#38383a',
-                shadow: 'rgba(0,0,0,0.5)'
+                shadow: 'rgba(0,0,0,0.5)',
+                surfaceHover: '#2c2c2e',
             }
         }
 
@@ -199,10 +183,10 @@
             hover: '#e8e8ed',
             inputBg: '#ffffff',
             inputBorder: '#d2d2d7',
-            shadow: 'rgba(0,0,0,0.1)'
+            shadow: 'rgba(0,0,0,0.1)',
+            surfaceHover: '#e8e8ed',
         }
     }
-
 
     // 20251127: switch to ConfigManager (config.json) only — remove selectors.json legacy usage
     async function getRemoteSelector(platform, type) {
@@ -210,8 +194,8 @@
     }
 
     const FLASH_MODE_PROMPT = {
-        title: "灵光模式",
-        preview: "https://cdn.jsdelivr.net/gh/glidea/banana-prompt-quicker@main/images/flash_mode.png",
+        title: '灵光模式',
+        preview: 'https://cdn.jsdelivr.net/gh/glidea/banana-prompt-quicker@main/images/flash_mode.png',
         prompt: `你现在进入【灵光模式: 有灵感就够了】。请按照以下步骤辅助我完成创作：
 1. 需求理解：分析我输入的粗略的想法描述（可能会包含图片）
 2. 需求澄清：要求我做出细节澄清，提出 3 个你认为最重要的选择题（A/B/C/D），以明确我的生图或修图需求（例如风格、构图、光影、具体相关细节等）。请一次性列出这三个问题
@@ -220,9 +204,9 @@
 ---
 
 OK，我想要：`,
-        link: "https://www.xiaohongshu.com/user/profile/5f7dc54d0000000001004afb",
-        author: "Official@glidea",
-        isFlash: true
+        link: 'https://www.xiaohongshu.com/user/profile/5f7dc54d0000000001004afb',
+        author: 'Official@glidea',
+        isFlash: true,
     }
     // --- modal.js Logic ---
     class BananaModal {
@@ -253,24 +237,21 @@ OK，我想要：`,
 
             // Aggregate categories
             this.categories = new Set(['全部'])
-            this.prompts.forEach(p => {
+            this.prompts.forEach((p) => {
                 if (p.category) {
                     this.categories.add(p.category)
                 }
             })
 
-            this.updateCategoryDropdown()
-            this.applyFilters()
-
             this.ensureRandomValues()
 
             this.updateCategoryDropdown()
             // 只在首次加载或有必要时重置页码
-            this.applyFilters(!this._isInitialized)
+            await this.applyFilters(!this._isInitialized)
         }
 
         ensureRandomValues() {
-            this.prompts.forEach(p => {
+            this.prompts.forEach((p) => {
                 const key = `${p.title}-${p.author}`
                 if (!this.randomMap.has(key)) {
                     this.randomMap.set(key, Math.random())
@@ -305,7 +286,7 @@ OK，我想要：`,
                 optionsContainer.appendChild(empty)
             }
 
-            sortedCategories.forEach(cat => {
+            sortedCategories.forEach((cat) => {
                 const option = document.createElement('div')
                 option.textContent = cat
                 const currentLabel = this.selectedCategory === 'all' ? '全部' : this.selectedCategory
@@ -313,9 +294,7 @@ OK，我想要：`,
                 const colors = this.adapter.getThemeColors()
 
                 const baseStyle = `padding: 10px 16px; cursor: pointer; transition: all 0.2s; font-size: 14px;`
-                const selectedStyle = isSelected
-                    ? `background: ${colors.primary}15; color: ${colors.primary}; font-weight: 600;`
-                    : `background: transparent; color: ${colors.text};`
+                const selectedStyle = isSelected ? `background: ${colors.primary}15; color: ${colors.primary}; font-weight: 600;` : `background: transparent; color: ${colors.text};`
                 option.style.cssText = baseStyle + selectedStyle
 
                 option.onmouseenter = () => {
@@ -420,14 +399,10 @@ OK，我想要：`,
             if (!this._isInitialized) {
                 // 首次显示：完整初始化
                 this.updateCategoryDropdown()
-                this.applyFilters(true)
-                this._isInitialized = true
+                this.applyFilters(true).then(() => (this._isInitialized = true))
             } else {
                 // 重新显示：只刷新数据，保留状态
-                this.loadPrompts().then(() => {
-                    // 刷新当前页面显示（保持在当前页）
-                    this.renderCurrentPage()
-                })
+                this.loadPrompts()
             }
             // 添加键盘事件监听器
             document.addEventListener('keydown', this.keyboardHandler)
@@ -451,7 +426,8 @@ OK，我想要：`,
 
             const modalElement = document.createElement('div')
             modalElement.id = 'prompts-modal'
-            modalElement.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 10000;'
+            modalElement.style.cssText =
+                'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 10000;'
 
             const container = document.createElement('div')
             container.style.cssText = `background: ${colors.background}; border-radius: ${mobile ? '24px 24px 0 0' : '20px'}; box-shadow: 0 20px 60px ${colors.shadow}; max-width: ${mobile ? '100%' : '900px'}; width: ${mobile ? '100%' : '90%'}; max-height: ${mobile ? '90vh' : '85vh'}; display: flex; flex-direction: column; ${mobile ? 'margin-top: auto;' : ''}; overflow: visible;`
@@ -504,7 +480,6 @@ OK，我想要：`,
                 searchInput.style.borderColor = currentColors.inputBorder
             })
 
-
             // Sort Mode Button
             const sortBtnContainer = document.createElement('div')
             sortBtnContainer.style.cssText = 'position: relative; display: flex; align-items: center;'
@@ -512,9 +487,10 @@ OK，我想要：`,
             const sortBtn = document.createElement('button')
             sortBtn.id = 'sort-mode-btn'
             const currentModeText = this.sortMode === 'recommend' ? '随机焕新' : '推荐排序'
-            sortBtn.innerHTML = this.sortMode === 'recommend'
-                ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>'
-                : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>'
+            sortBtn.innerHTML =
+                this.sortMode === 'recommend'
+                    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>'
+                    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>'
             sortBtn.style.cssText = `padding: ${mobile ? '10px' : '8px'}; border: none; background: transparent; color: ${colors.textSecondary}; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; border-radius: 8px;`
             sortBtn.onclick = () => this.toggleSortMode()
 
@@ -554,7 +530,7 @@ OK，我想要：`,
 
             const dropdownTrigger = document.createElement('div')
             dropdownTrigger.id = 'category-dropdown-trigger'
-            dropdownTrigger.style.cssText = `padding: ${mobile ? '10px 14px' : '8px 12px'}; border: 1px solid ${colors.border}; border-radius: 16px; background: ${colors.surface}; color: ${colors.text}; font-size: ${mobile ? '14px' : '13px'}; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; width: 60px; justify-content: space-between; user-select: none;`
+            dropdownTrigger.style.cssText = `padding: ${mobile ? '10px 14px' : '8px 12px'}; border: 1px solid ${colors.border}; border-radius: 16px; background: ${colors.surface}; color: ${colors.text}; font-size: ${mobile ? '14px' : '13px'}; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; min-width: 70px; justify-content: space-between; user-select: none;`
 
             const triggerText = document.createElement('span')
             triggerText.id = 'category-trigger-text'
@@ -621,10 +597,10 @@ OK，我想要：`,
                 { key: 'favorite', label: '收藏' },
                 { key: 'custom', label: '自定义' },
                 { key: 'generate', label: '生图' },
-                { key: 'edit', label: '编辑' }
+                { key: 'edit', label: '编辑' },
             ]
 
-            filters.forEach(filter => {
+            filters.forEach((filter) => {
                 const btn = document.createElement('button')
                 btn.id = `filter-${filter.key}`
                 btn.textContent = filter.label
@@ -743,9 +719,10 @@ OK，我想要：`,
             const tooltip = document.getElementById('sort-tooltip')
             if (sortBtn) {
                 const currentModeText = newMode === 'recommend' ? '随机焕新' : '推荐排序'
-                sortBtn.innerHTML = newMode === 'recommend'
-                    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>'
-                    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>'
+                sortBtn.innerHTML =
+                    newMode === 'recommend'
+                        ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>'
+                        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>'
 
                 if (tooltip) {
                     tooltip.textContent = `切换${currentModeText}`
@@ -762,11 +739,8 @@ OK，我想要：`,
 
             this.favorites = await this.getFavorites()
 
-            let filtered = this.prompts.filter(prompt => {
-                const matchesSearch = !keyword ||
-                    prompt.title.toLowerCase().includes(keyword) ||
-                    prompt.prompt.toLowerCase().includes(keyword) ||
-                    prompt.author.toLowerCase().includes(keyword)
+            let filtered = this.prompts.filter((prompt) => {
+                const matchesSearch = !keyword || prompt.title.toLowerCase().includes(keyword) || prompt.prompt.toLowerCase().includes(keyword) || prompt.author.toLowerCase().includes(keyword)
 
                 if (!matchesSearch) return false
 
@@ -780,7 +754,7 @@ OK，我想要：`,
                 const promptId = `${prompt.title}-${prompt.author}`
                 const isFavorite = this.favorites.includes(promptId)
 
-                return Array.from(this.activeFilters).every(filter => {
+                return Array.from(this.activeFilters).every((filter) => {
                     if (filter === 'favorite') return isFavorite
                     if (filter === 'custom') return prompt.isCustom
                     if (filter === 'generate') return prompt.mode === 'generate'
@@ -795,7 +769,7 @@ OK，我想要：`,
             const customItems = []
             const normalItems = []
 
-            filtered.forEach(item => {
+            filtered.forEach((item) => {
                 const itemId = `${item.title}-${item.author}`
                 const isFavorite = this.favorites.includes(itemId)
 
@@ -868,7 +842,7 @@ OK，我想要：`,
                 placeholder.textContent = '没有找到相关提示词'
                 grid.appendChild(placeholder)
             } else {
-                pageItems.forEach(prompt => {
+                pageItems.forEach((prompt) => {
                     const card = this.createPromptCard(prompt, this.favorites)
                     grid.appendChild(card)
                 })
@@ -967,20 +941,13 @@ OK，我想要：`,
             const socialContainer = document.createElement('div')
             socialContainer.style.cssText = `display: flex; align-items: center; gap: ${mobile ? '12px' : '16px'}; justify-content: ${mobile ? 'center' : 'flex-end'};`
 
-            const githubLink = document.createElement('a')
-            githubLink.href = 'https://github.com/glidea/banana-prompt-quicker'
-            githubLink.target = '_blank'
-            githubLink.innerHTML = `<svg height="20" width="20" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>`
-            githubLink.style.cssText = `color: ${colors.textSecondary}; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 50%; cursor: pointer;`
+            const greasyfork = document.createElement('a')
+            greasyfork.href = 'https://greasyfork.org/zh-CN/scripts/556866-banana-prompt-quicker'
+            greasyfork.target = '_blank'
+            greasyfork.innerHTML = `<svg fill="#670000" height="20" width="20" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Greasy Fork</title><path d="M5.89 2.227a.28.28 0 0 1 .266.076l5.063 5.062c.54.54.509 1.652-.031 2.192l8.771 8.77c1.356 1.355-.36 3.097-1.73 1.728l-8.772-8.77c-.54.54-1.651.571-2.191.031l-5.063-5.06c-.304-.304.304-.911.608-.608l3.714 3.713L7.59 8.297 3.875 4.582c-.304-.304.304-.911.607-.607l3.715 3.714 1.067-1.066L5.549 2.91c-.228-.228.057-.626.342-.683ZM12 0C5.374 0 0 5.375 0 12s5.374 12 12 12c6.625 0 12-5.375 12-12S18.625 0 12 0Z"/></svg>`
+            greasyfork.style.cssText = `color: ${colors.textSecondary}; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 50%; cursor: pointer;`
 
-            const xhsLink = document.createElement('a')
-            xhsLink.href = 'https://www.xiaohongshu.com/user/profile/5f7dc54d0000000001004afb'
-            xhsLink.target = '_blank'
-            xhsLink.innerHTML = `<svg viewBox="0 0 1024 1024" width="20" height="20" fill="currentColor"><path d="M880 112H144c-17.7 0-32 14.3-32 32v736c0 17.7 14.3 32 32 32h736c17.7 0 32-14.3 32-32V144c0-17.7-14.3-32-32-32z m-40 728H184V184h656v656zM312 376h400v80H312z m0 176h400v80H312z" /></svg>`
-            xhsLink.style.cssText = `color: ${colors.textSecondary}; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 50%; cursor: pointer;`
-
-            socialContainer.appendChild(githubLink)
-            socialContainer.appendChild(xhsLink)
+            socialContainer.appendChild(greasyfork)
 
             if (mobile) {
                 pagination.appendChild(controlsWrapper)
@@ -1039,7 +1006,7 @@ OK，我想要：`,
             const img = GM_addElement('img', {
                 src: prompt.preview,
                 alt: prompt.title,
-                style: `width: 100%; height: ${mobile ? '180px' : '200px'}; object-fit: cover; flex-shrink: 0;`
+                style: `width: 100%; height: ${mobile ? '180px' : '200px'}; object-fit: cover; flex-shrink: 0;`,
             })
             img.onclick = () => this.adapter.insertPrompt(prompt.prompt)
 
@@ -1092,12 +1059,8 @@ OK，我想要：`,
             } else {
                 const isEdit = prompt.mode === 'edit'
                 tagText = isEdit ? '编辑' : '生图'
-                tagBg = theme === 'dark'
-                    ? (isEdit ? 'rgba(10, 132, 255, 0.15)' : 'rgba(48, 209, 88, 0.15)')
-                    : (isEdit ? 'rgba(0, 122, 255, 0.12)' : 'rgba(52, 199, 89, 0.12)')
-                tagColor = theme === 'dark'
-                    ? (isEdit ? '#0a84ff' : '#30d158')
-                    : (isEdit ? '#007aff' : '#34c759')
+                tagBg = theme === 'dark' ? (isEdit ? 'rgba(10, 132, 255, 0.15)' : 'rgba(48, 209, 88, 0.15)') : isEdit ? 'rgba(0, 122, 255, 0.12)' : 'rgba(52, 199, 89, 0.12)'
+                tagColor = theme === 'dark' ? (isEdit ? '#0a84ff' : '#30d158') : isEdit ? '#007aff' : '#34c759'
             }
 
             modeTag.style.cssText = `background: ${tagBg}; color: ${tagColor}; padding: 4px 10px; border-radius: 12px; font-size: ${mobile ? '12px' : '11px'}; font-weight: 600; backdrop-filter: blur(10px); flex-shrink: 0;`
@@ -1109,15 +1072,54 @@ OK，我想要：`,
             content.appendChild(bottomRow)
 
             if (prompt.isCustom) {
+                const btnBg = theme === 'dark' ? 'rgba(48,49,52,0.9)' : 'rgba(255,255,255,0.9)'
+                const btnColor = theme === 'dark' ? '#e8eaed' : '#5f6368'
+
+                // 编辑按钮
+                const editBtn = document.createElement('button')
+                editBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`
+                editBtn.title = '编辑'
+                editBtn.style.cssText = `position: absolute; top: 12px; left: 12px; width: ${mobile ? '36px' : '32px'}; height: ${mobile ? '36px' : '32px'}; border-radius: 50%; border: none; background: ${btnBg}; color: ${btnColor}; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.25s ease; z-index: 2; backdrop-filter: blur(10px); box-shadow: 0 4px 12px rgba(0,0,0,0.15);`
+
+                editBtn.onclick = (e) => {
+                    e.stopPropagation()
+                    this.showAddPromptModal(prompt)
+                }
+
+                if (!mobile) {
+                    editBtn.addEventListener('mouseenter', () => {
+                        editBtn.style.transform = 'scale(1.15)'
+                        editBtn.style.boxShadow = '0 6px 16px rgba(0,122,255,0.4)'
+                    })
+                    editBtn.addEventListener('mouseleave', () => {
+                        editBtn.style.transform = 'scale(1)'
+                        editBtn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'
+                    })
+                }
+
+                // 删除按钮
                 const deleteBtn = document.createElement('button')
-                deleteBtn.textContent = '×'
-                deleteBtn.style.cssText = `position: absolute; top: 12px; left: 12px; width: ${mobile ? '36px' : '32px'}; height: ${mobile ? '36px' : '32px'}; border-radius: 50%; border: none; background: rgba(0,0,0,0.7); color: white; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.25s ease; z-index: 2; line-height: 1; padding-bottom: 2px; backdrop-filter: blur(10px); box-shadow: 0 4px 12px rgba(0,0,0,0.15);`
+                deleteBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`
+                deleteBtn.title = '删除'
+                deleteBtn.style.cssText = `position: absolute; top: 12px; left: ${mobile ? '56px' : '48px'}; width: ${mobile ? '36px' : '32px'}; height: ${mobile ? '36px' : '32px'}; border-radius: 50%; border: none; background: ${btnBg}; color: ${btnColor}; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.25s ease; z-index: 2; backdrop-filter: blur(10px); box-shadow: 0 4px 12px rgba(0,0,0,0.15);`
                 deleteBtn.onclick = (e) => {
                     e.stopPropagation()
                     if (confirm('确定要删除这个 Prompt 吗？')) {
                         this.deleteCustomPrompt(prompt.id)
                     }
                 }
+                if (!mobile) {
+                    deleteBtn.addEventListener('mouseenter', () => {
+                        deleteBtn.style.transform = 'scale(1.15)'
+                        deleteBtn.style.boxShadow = '0 6px 16px rgba(0,0,0,0.25)'
+                    })
+                    deleteBtn.addEventListener('mouseleave', () => {
+                        deleteBtn.style.transform = 'scale(1)'
+                        deleteBtn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'
+                    })
+                }
+
+                card.appendChild(editBtn)
                 card.appendChild(deleteBtn)
             }
 
@@ -1145,7 +1147,7 @@ OK，我想要：`,
             this.applyFilters(false)
         }
 
-        showAddPromptModal() {
+        showAddPromptModal(existingPrompt = null) {
             const colors = this.adapter.getThemeColors()
             const mobile = this.isMobile()
 
@@ -1156,12 +1158,11 @@ OK，我想要：`,
             }
 
             const dialog = document.createElement('div')
-            dialog.style.cssText = `background: ${colors.surface}; padding: ${mobile ? '28px' : '32px'}; border-radius: 20px; width: ${mobile ? '90%' : '500px'}; max-width: 90%; box-shadow: 0 20px 60px ${colors.shadow}; display: flex; flex-direction: column; gap: 20px; color: ${colors.text};`
-            dialog.onclick = (e) => e.stopPropagation()
+            dialog.style.cssText = `background: ${colors.surface}; padding: ${mobile ? '24px' : '32px'}; border-radius: 20px; width: ${mobile ? '90%' : '480px'}; max-width: 90%; box-shadow: 0 20px 60px ${colors.shadow}; display: flex; flex-direction: column; gap: 16px; color: ${colors.text};`
 
             const title = document.createElement('h3')
-            title.textContent = '添加自定义 Prompt'
-            title.style.cssText = 'margin: 0 0 8px 0; font-size: 20px; font-weight: 600;'
+            title.textContent = existingPrompt ? '编辑自定义 Prompt' : '添加自定义 Prompt'
+            title.style.cssText = 'margin: 0 0 4px 0; font-size: 20px; font-weight: 600;'
 
             const createInput = (placeholder, isTextarea = false) => {
                 const input = document.createElement(isTextarea ? 'textarea' : 'input')
@@ -1179,38 +1180,98 @@ OK，我想要：`,
             }
 
             const titleInput = createInput('标题')
+            if (existingPrompt) titleInput.value = existingPrompt.title
+
+            // Mode Selection (Moved up)
+            let selectedMode = existingPrompt?.mode || 'generate'
+            const createModeSelection = () => {
+                const modeContainer = document.createElement('div')
+
+                modeContainer.style.cssText = `display: flex; background: ${colors.inputBg}; padding: 4px; border-radius: 10px; border: 1px solid ${colors.inputBorder};`
+                const createOption = (value, label, iconSvg) => {
+                    const isSelected = selectedMode === value
+
+                    const option = document.createElement('div')
+                    option.style.cssText = `flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 13px; transition: all 0.2s; font-weight: ${isSelected ? '600' : '400'}; color: ${isSelected ? colors.text : colors.textSecondary}; background: ${isSelected ? colors.surface : 'transparent'}; box-shadow: ${isSelected ? `0 2px 8px ${colors.shadow}` : 'none'};`
+                    option.onclick = () => {
+                        selectedMode = value
+                        modeContainer.parentNode.replaceChild(createModeSelection(), modeContainer)
+                    }
+
+                    const icon = document.createElement('span')
+                    icon.innerHTML = iconSvg
+                    icon.style.cssText = 'display: flex; align-items: center;'
+
+                    option.appendChild(icon)
+                    option.appendChild(document.createTextNode(label))
+                    return option
+                }
+                const generateIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`
+                const editIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`
+                modeContainer.appendChild(createOption('generate', '文生图', generateIcon))
+                modeContainer.appendChild(createOption('edit', '编辑', editIcon))
+                return modeContainer
+            }
+            const modeContainer = createModeSelection()
 
             // Image Upload UI
             const imageContainer = document.createElement('div')
-            imageContainer.style.cssText = `display: flex; align-items: center; gap: 12px; width: 100%;`
+            imageContainer.style.cssText = `width: 100%; height: 140px; border: 1px dashed ${colors.border}; border-radius: 12px; background: ${colors.inputBg}; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; transition: all 0.2s;`
 
             const fileInput = document.createElement('input')
             fileInput.type = 'file'
             fileInput.accept = 'image/*'
             fileInput.style.display = 'none'
 
-            const previewBtn = document.createElement('div')
-            previewBtn.style.cssText = `width: 60px; height: 60px; border-radius: 12px; border: 1px dashed ${colors.border}; background: ${colors.inputBg}; cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; flex-shrink: 0; transition: all 0.2s;`
-
             const placeholderIcon = document.createElement('span')
-            placeholderIcon.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${colors.textSecondary}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`
-            previewBtn.appendChild(placeholderIcon)
+            placeholderIcon.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="${colors.textSecondary}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`
+            placeholderIcon.style.cssText = 'margin-bottom: 8px'
+
+            const placeholderText = document.createElement('span')
+            placeholderText.style.cssText = `font-size: 13px; color: ${colors.textSecondary}; font-weight: 500;`
+            placeholderText.textContent = '点击上传封面图'
+
+            const placeholderContainer = document.createElement('div')
+            placeholderContainer.style.cssText = 'display: flex; flex-direction: column; align-items: center; pointer-events: none;'
+            placeholderContainer.appendChild(placeholderIcon)
+            placeholderContainer.appendChild(placeholderText)
 
             const previewImg = document.createElement('img')
-            previewImg.style.cssText = `width: 100%; height: 100%; object-fit: cover; display: none;`
-            previewBtn.appendChild(previewImg)
+            previewImg.style.cssText = `width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; top: 0; left: 0;`
 
-            const uploadTip = document.createElement('span')
-            uploadTip.textContent = '上传封面 (可选)'
-            uploadTip.style.cssText = `font-size: 13px; color: ${colors.textSecondary};`
+            const clearBtn = document.createElement('button')
+            clearBtn.innerHTML =
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>'
+            clearBtn.style.cssText = `position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 50%; background: rgba(0,0,0,0.5); color: white; border: none; cursor: pointer; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); transition: all 0.2s; z-index: 10;`
+            clearBtn.onclick = () => {
+                fileInput.value = ''
+                selectedFile = null
+                previewImg.removeAttribute('src')
+                previewImg.style.display = 'none'
+                placeholderContainer.style.display = 'flex'
+                clearBtn.style.display = 'none'
+                imageContainer.style.borderStyle = 'dashed'
+            }
+            clearBtn.onmouseenter = (e) => (e.target.style.background = 'rgba(0,0,0,0.7)')
+            clearBtn.onmouseleave = (e) => (e.target.style.background = 'rgba(0,0,0,0.5)')
 
-            const clearImgBtn = document.createElement('button')
-            clearImgBtn.innerHTML = '×'
-            clearImgBtn.style.cssText = `margin-left: auto; width: 24px; height: 24px; border-radius: 50%; background: ${colors.border}; color: ${colors.text}; border: none; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 16px; padding-bottom: 2px;`
-
-            previewBtn.onclick = () => fileInput.click()
+            // Click handler for container
+            imageContainer.onclick = (e) => {
+                if (e.target !== clearBtn && !clearBtn.contains(e.target)) {
+                    fileInput.click()
+                }
+            }
 
             let selectedFile = null
+
+            // 如果是编辑模式且有预览图,显示预览图
+            if (existingPrompt?.preview && !existingPrompt.preview.includes('gstatic.com')) {
+                previewImg.src = existingPrompt.preview
+                previewImg.style.display = 'block'
+                placeholderContainer.style.display = 'none'
+                imageContainer.style.borderStyle = 'solid'
+                clearBtn.style.display = 'flex'
+            }
 
             fileInput.onchange = (e) => {
                 if (e.target.files && e.target.files[0]) {
@@ -1221,30 +1282,34 @@ OK，我想要：`,
                     reader.onload = (evt) => {
                         previewImg.src = evt.target.result
                         previewImg.style.display = 'block'
-                        placeholderIcon.style.display = 'none'
-                        previewBtn.style.borderStyle = 'solid'
-                        clearImgBtn.style.display = 'flex'
+                        placeholderContainer.style.display = 'none'
+                        imageContainer.style.borderStyle = 'solid'
+                        clearBtn.style.display = 'flex'
                     }
                     reader.readAsDataURL(file)
                 }
             }
 
-            clearImgBtn.onclick = () => {
-                fileInput.value = ''
-                selectedFile = null
-                previewImg.src = ''
-                previewImg.style.display = 'none'
-                placeholderIcon.style.display = 'block'
-                previewBtn.style.borderStyle = 'dashed'
-                clearImgBtn.style.display = 'none'
+            imageContainer.onmouseenter = (e) => {
+                if (!selectedFile && !previewImg.src) {
+                    e.target.style.borderColor = colors.primary
+                    e.target.style.background = colors.surfaceHover
+                }
+            }
+            imageContainer.onmouseleave = (e) => {
+                if (!selectedFile && !previewImg.src) {
+                    e.target.style.borderColor = colors.border
+                    e.target.style.background = colors.inputBg
+                }
             }
 
             imageContainer.appendChild(fileInput)
-            imageContainer.appendChild(previewBtn)
-            imageContainer.appendChild(uploadTip)
-            imageContainer.appendChild(clearImgBtn)
+            imageContainer.appendChild(placeholderContainer)
+            imageContainer.appendChild(previewImg)
+            imageContainer.appendChild(clearBtn)
 
             const promptInput = createInput('Prompt 内容', true)
+            if (existingPrompt) promptInput.value = existingPrompt.prompt
 
             // Category Dropdown for Add Prompt
             const categoryContainer = document.createElement('div')
@@ -1253,8 +1318,10 @@ OK，我想要：`,
             const categoryTrigger = document.createElement('div')
             categoryTrigger.style.cssText = `width: 100%; padding: ${mobile ? '14px 16px' : '12px 16px'}; border: 1px solid ${colors.inputBorder}; border-radius: 12px; background: ${colors.inputBg}; color: ${colors.text}; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box;`
 
-            const addCategories = Array.from(this.categories).filter(c => c !== '全部').sort((a, b) => a.localeCompare(b))
-            let selectedAddCategory = addCategories[0] || '默认'
+            const addCategories = Array.from(this.categories)
+                .filter((c) => c !== '全部')
+                .sort((a, b) => a.localeCompare(b))
+            let selectedAddCategory = existingPrompt?.category || addCategories[0]
             const categoryTriggerText = document.createElement('span')
             categoryTriggerText.textContent = selectedAddCategory
 
@@ -1268,14 +1335,18 @@ OK，我想要：`,
             const categoryOptions = document.createElement('div')
             categoryOptions.style.cssText = `position: absolute; top: 100%; left: 0; margin-top: 8px; width: 100%; background: ${colors.surface}; border: 1px solid ${colors.border}; border-radius: 12px; box-shadow: 0 10px 40px ${colors.shadow}; display: none; flex-direction: column; overflow: hidden; backdrop-filter: blur(20px); max-height: 200px; overflow-y: auto; z-index: 100;`
 
-            addCategories.forEach(cat => {
+            addCategories.forEach((cat) => {
                 const option = document.createElement('div')
                 option.textContent = cat
                 const baseStyle = `padding: 10px 16px; cursor: pointer; transition: all 0.2s; font-size: 14px; background: transparent; color: ${colors.text};`
                 option.style.cssText = baseStyle
 
-                option.onmouseenter = () => { option.style.background = colors.surfaceHover }
-                option.onmouseleave = () => { option.style.background = 'transparent' }
+                option.onmouseenter = () => {
+                    option.style.background = colors.surfaceHover
+                }
+                option.onmouseleave = () => {
+                    option.style.background = 'transparent'
+                }
                 option.onclick = (e) => {
                     e.stopPropagation()
                     selectedAddCategory = cat
@@ -1305,28 +1376,6 @@ OK，我想要：`,
             categoryContainer.appendChild(categoryTrigger)
             categoryContainer.appendChild(categoryOptions)
 
-            const modeContainer = document.createElement('div')
-            modeContainer.style.display = 'flex'
-            modeContainer.style.gap = '16px'
-
-            let selectedMode = 'generate'
-            const createRadio = (value, label) => {
-                const labelEl = document.createElement('label')
-                labelEl.style.cssText = 'display: flex; align-items: center; gap: 6px; cursor: pointer;'
-                const radio = document.createElement('input')
-                radio.type = 'radio'
-                radio.name = 'prompt-mode'
-                radio.value = value
-                radio.checked = value === selectedMode
-                radio.onchange = () => { selectedMode = value }
-                labelEl.appendChild(radio)
-                labelEl.appendChild(document.createTextNode(label))
-                return labelEl
-            }
-
-            modeContainer.appendChild(createRadio('generate', '生图'))
-            modeContainer.appendChild(createRadio('edit', '编辑'))
-
             const btnContainer = document.createElement('div')
             btnContainer.style.cssText = 'display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;'
 
@@ -1349,7 +1398,7 @@ OK，我想要：`,
                     return
                 }
 
-                let previewDataUrl = 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg'
+                let previewDataUrl = existingPrompt?.preview || 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg'
 
                 if (selectedFile) {
                     try {
@@ -1358,20 +1407,26 @@ OK，我想要：`,
                         previewDataUrl = await this.compressImage(selectedFile)
                     } catch (err) {
                         console.error('图片压缩失败', err)
-                        alert('图片处理失败，将使用默认图标')
+                        alert('图片处理失败,将使用默认图标')
                     } finally {
                         saveBtn.textContent = '保存'
                         saveBtn.disabled = false
                     }
                 }
 
-                await this.saveCustomPrompt({
+                const promptData = {
                     title: titleVal,
                     prompt: promptVal,
                     mode: selectedMode,
                     category: selectedAddCategory,
-                    preview: previewDataUrl
-                })
+                    preview: previewDataUrl,
+                }
+
+                if (existingPrompt) {
+                    await this.updateCustomPrompt(existingPrompt.id, promptData)
+                } else {
+                    await this.saveCustomPrompt(promptData)
+                }
                 document.body.removeChild(overlay)
                 cleanup()
             }
@@ -1393,9 +1448,26 @@ OK，我想要：`,
 
         async deleteCustomPrompt(promptId) {
             const customPrompts = await this.getCustomPrompts()
-            const newPrompts = customPrompts.filter(p => p.id !== promptId)
+            const newPrompts = customPrompts.filter((p) => p.id !== promptId)
             await chrome.storage.local.set({ 'banana-custom-prompts': newPrompts })
             await this.loadPrompts()
+        }
+
+        async updateCustomPrompt(promptId, data) {
+            const customPrompts = await this.getCustomPrompts()
+            const index = customPrompts.findIndex((p) => p.id === promptId)
+
+            if (index !== -1) {
+                customPrompts[index] = {
+                    ...customPrompts[index],
+                    ...data,
+                    id: promptId,
+                    author: 'Me',
+                    isCustom: true,
+                }
+                await chrome.storage.local.set({ 'banana-custom-prompts': customPrompts })
+                await this.loadPrompts()
+            }
         }
 
         async saveCustomPrompt(data) {
@@ -1404,7 +1476,7 @@ OK，我想要：`,
                 author: 'Me',
                 isCustom: true,
                 id: Date.now(),
-                preview: data.preview || 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg'
+                preview: data.preview || 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg',
             }
             const customPrompts = await this.getCustomPrompts()
             customPrompts.unshift(newPrompt)
@@ -1435,7 +1507,6 @@ OK，我想要：`,
             return document.querySelector(s)
         }
 
-
         async findClosestInsertButton() {
             let el = document.querySelector('ms-run-button button')
             if (el) {
@@ -1453,8 +1524,6 @@ OK，我想要：`,
 
         getThemeColors() {
             return getDefaultThemeColors(this.getCurrentTheme())
-
-
         }
 
         createButton() {
@@ -1568,7 +1637,6 @@ OK，我想要：`,
             let el = document.querySelector('button.toolbox-drawer-item-deselect-button:has(img.img-icon)')
             if (el) {
                 return el
-
             }
 
             // Fallback.
@@ -1577,8 +1645,7 @@ OK，我想要：`,
         }
 
         getCurrentTheme() {
-            return document.body.classList.contains('dark-theme') ||
-                document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'
+            return document.body.classList.contains('dark-theme') || document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'
         }
 
         getThemeColors() {
@@ -1662,10 +1729,12 @@ OK，我想要：`,
             if (textarea) {
                 textarea.focus()
                 const lines = promptText.split('\n')
-                const htmlContent = lines.map(line => {
-                    const escaped = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-                    return `<p>${escaped || '<br>'}</p>`
-                }).join('')
+                const htmlContent = lines
+                    .map((line) => {
+                        const escaped = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                        return `<p>${escaped || '<br>'}</p>`
+                    })
+                    .join('')
                 textarea.innerHTML = htmlContent
                 textarea.dispatchEvent(new Event('input', { bubbles: true }))
 
@@ -1682,7 +1751,7 @@ OK，我想要：`,
             }
         }
 
-        waitForElements() { }
+        waitForElements() {}
 
         startObserver() {
             const observer = new MutationObserver(async () => {
@@ -1717,9 +1786,7 @@ OK，我想要：`,
 
         isEditableElement(el) {
             if (!el) return false
-            return el.tagName === 'TEXTAREA' ||
-                (el.tagName === 'INPUT' && ['text', 'search', 'email', 'url'].includes(el.type)) ||
-                el.isContentEditable
+            return el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && ['text', 'search', 'email', 'url'].includes(el.type)) || el.isContentEditable
         }
 
         async findPromptInput() {
@@ -1745,12 +1812,14 @@ OK，我想要：`,
             if (el.hasOwnProperty('__lexicalEditor')) {
                 // 特殊处理富文本编辑器 Lexical
                 el.focus()
-                el.dispatchEvent(new InputEvent('beforeinput', {
-                    inputType: 'insertText',
-                    data: promptText,
-                    bubbles: true,
-                    cancelable: true,
-                }));
+                el.dispatchEvent(
+                    new InputEvent('beforeinput', {
+                        inputType: 'insertText',
+                        data: promptText,
+                        bubbles: true,
+                        cancelable: true,
+                    })
+                )
             } else if (el.isContentEditable) {
                 // contenteditable 处理 - 在光标位置插入
                 const selection = window.getSelection()
@@ -1775,13 +1844,13 @@ OK，我想要：`,
                     selection.addRange(range)
                 } else {
                     // 如果没有选区，追加到末尾
-                    const htmlContent = promptText.split('\n').map(line => {
-                        const escaped = line
-                            .replace(/&/g, '&amp;')
-                            .replace(/</g, '&lt;')
-                            .replace(/>/g, '&gt;')
-                        return `<p>${escaped || '<br>'}</p>`
-                    }).join('')
+                    const htmlContent = promptText
+                        .split('\n')
+                        .map((line) => {
+                            const escaped = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                            return `<p>${escaped || '<br>'}</p>`
+                        })
+                        .join('')
                     el.innerHTML += htmlContent
                 }
                 el.dispatchEvent(new Event('input', { bubbles: true }))
@@ -1793,14 +1862,14 @@ OK，我想要：`,
 
                 const newValue = currentValue.substring(0, start) + promptText + currentValue.substring(end)
                 // https://github.com/facebook/react/issues/10135
-                const valueSetter = Object.getOwnPropertyDescriptor(el, 'value')?.set;
-                const prototype = Object.getPrototypeOf(el);
-                const prototypeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
+                const valueSetter = Object.getOwnPropertyDescriptor(el, 'value')?.set
+                const prototype = Object.getPrototypeOf(el)
+                const prototypeValueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set
 
                 if (prototypeValueSetter && valueSetter !== prototypeValueSetter) {
-                    prototypeValueSetter.call(el, newValue);
+                    prototypeValueSetter.call(el, newValue)
                 } else if (valueSetter) {
-                    valueSetter.call(el, newValue);
+                    valueSetter.call(el, newValue)
                 } else {
                     el.value = newValue
                 }
@@ -1827,13 +1896,15 @@ OK，我想要：`,
         }
 
         // 通用适配器不需要按钮
-        initButton() { return false }
-        waitForElements() { }
-        startObserver() { }
+        initButton() {
+            return false
+        }
+        waitForElements() {}
+        startObserver() {}
     }
 
     // --- Initialization ---
-    const event = new Event("fire-modal");
+    const event = new Event('fire-modal')
     function init() {
         const hostname = window.location.hostname
         let adapter
@@ -1863,22 +1934,22 @@ OK，我想要：`,
             window.addEventListener('replacestate', handleNavigationChange)
         }
 
-        document.body.addEventListener("fire-modal", () => {
+        document.body.addEventListener('fire-modal', () => {
             if (modal) {
                 modal.show()
             }
         })
     }
 
-    GM_addStyle('#prompts-modal, #prompts-modal *, #prompts-modal *::before, #prompts-modal *::after{ font-family: Roboto,"Helvetica Neue",sans-serif; };');
-    GM_addStyle('#prompts-search-section, #prompts-search-section *{ box-sizing: content-box; line-height: normal; };');
-    GM_registerMenuCommand("🍌 Insert Banana Prompts", () => document.body.dispatchEvent(event), {
-        autoClose: true
-    });
+    GM_addStyle('#prompts-modal, #prompts-modal *, #prompts-modal *::before, #prompts-modal *::after{ font-family: Roboto,"Helvetica Neue",sans-serif; };')
+    GM_addStyle('#prompts-search-section, #prompts-search-section *{ box-sizing: content-box; line-height: normal; };')
+    GM_registerMenuCommand('🍌 Insert Banana Prompts', () => document.body.dispatchEvent(event), {
+        autoClose: true,
+    })
 
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
         init()
     } else {
         window.addEventListener('load', init)
     }
-})();
+})()
