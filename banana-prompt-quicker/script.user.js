@@ -926,7 +926,8 @@ OK，我想要：`,
             }
             const otherPageInfo = document.createElement('span')
             otherPageInfo.textContent = `/ ${totalPages}`
-            pageInfo.style.cssText = `color: ${colors.text}; font-size: ${mobile ? '14px' : '13px'}; font-weight: 500;`
+            otherPageInfo.style.width = '1.8em'
+            pageInfo.style.cssText = `color: ${colors.text}; font-size: ${mobile ? '14px' : '13px'}; font-weight: 500; display: flex; align-items: center; justify-content: center;`
             pageInfo.appendChild(editablePageBtn)
             pageInfo.appendChild(otherPageInfo)
 
@@ -1943,6 +1944,7 @@ OK，我想要：`,
 
     GM_addStyle('#prompts-modal, #prompts-modal *, #prompts-modal *::before, #prompts-modal *::after{ font-family: Roboto,"Helvetica Neue",sans-serif; };')
     GM_addStyle('#prompts-search-section, #prompts-search-section *{ box-sizing: content-box; line-height: normal; };')
+    GM_addStyle('#prompts-modal button{ margin: 0; padding: 0;};')
     GM_registerMenuCommand('🍌 Insert Banana Prompts', () => document.body.dispatchEvent(event), {
         autoClose: true,
     })
