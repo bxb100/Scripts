@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             1.4.1
+// @version             1.4.2
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -24,6 +24,7 @@
 // @grant               GM_registerMenuCommand
 // @grant               GM_addStyle
 // @connect             raw.githubusercontent.com
+// @connect             gist.githubusercontent.com
 // @source              https://github.com/bxb100/Scripts/tree/main/banana-prompt-quicker
 // @homepage            https://github.com/bxb100/Scripts/tree/main/banana-prompt-quicker
 // @homepageURL         https://github.com/bxb100/Scripts/tree/main/banana-prompt-quicker
@@ -118,9 +119,17 @@
             defaultValue: [],
         }
 
+        const extraPromptsDetails = {
+            url: 'https://gist.githubusercontent.com/bxb100/c29f6a8608a28eec15094fc6cb0dfca9/raw/extra.json',
+            cacheKey: 'banana_extra_prompts_cache',
+            cacheTsKey: 'banana_extra_prompts_cache_time',
+            defaultValue: [],
+        }
+
         const CACHE_DURATION = 60 * 60 * 1000 // 60 min
 
-        async function getJsonWithCache(url, key, tsKey, defaultValue) {
+        async function getJsonWithCache(details) {
+            const { url, cacheKey: key, cacheTsKey: tsKey, defaultValue } = details
             const cache = await chrome.storage.local.get([key, tsKey])
             const cachedData = cache[key]
             const cacheTimestamp = cache[tsKey]
@@ -142,7 +151,7 @@
 
         return {
             async get() {
-                return getJsonWithCache(configDetails.url, configDetails.cacheKey, configDetails.cacheTsKey, configDetails.defaultValue)
+                return getJsonWithCache(configDetails)
             },
             async getSelectors(platform, type) {
                 const cfg = await this.get()
@@ -150,7 +159,9 @@
                 return selectors?.[platform]?.[type]
             },
             async getPrompts() {
-                return getJsonWithCache(promptsDetails.url, promptsDetails.cacheKey, promptsDetails.cacheTsKey, promptsDetails.defaultValue)
+                const a = await getJsonWithCache(promptsDetails)
+                const b = await getJsonWithCache(extraPromptsDetails)
+                return a.filter((p) => p.sub_category !== '金主').toSpliced(11, 0, ...b)
             },
         }
     })()
@@ -831,14 +842,14 @@ OK，我想要：`,
                 const minHeight = rows * cardMinHeight + (rows - 1) * gap
 
                 placeholder.style.cssText = `
-                    grid-column: 1 / -1;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    min-height: ${minHeight}px;
-                    color: ${colors.textSecondary};
-                    font-size: ${mobile ? '14px' : '16px'};
-                `
+                        grid-column: 1 / -1;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        min-height: ${minHeight}px;
+                        color: ${colors.textSecondary};
+                        font-size: ${mobile ? '14px' : '16px'};
+                    `
                 placeholder.textContent = '没有找到相关提示词'
                 grid.appendChild(placeholder)
             } else {
@@ -1662,23 +1673,23 @@ OK，我想要：`,
                 const colors = this.getThemeColors()
                 const mobile = window.innerWidth <= 768
                 btn.style.cssText = `
-                    height: 40px;
-                    ${mobile ? 'width: 40px;' : ''}
-                    border-radius: ${mobile ? '50%' : '20px'};
-                    border: none;
-                    background: transparent;
-                    color: ${colors.text};
-                    cursor: pointer;
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 14px;
-                    font-family: 'Google Sans', Roboto, Arial, sans-serif;
-                    margin-left: 4px;
-                    transition: background-color 0.2s;
-                    padding: ${mobile ? '0' : '0 16px'};
-                    gap: ${mobile ? '0' : '8px'};
-                `
+                        height: 40px;
+                        ${mobile ? 'width: 40px;' : ''}
+                        border-radius: ${mobile ? '50%' : '20px'};
+                        border: none;
+                        background: transparent;
+                        color: ${colors.text};
+                        cursor: pointer;
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 14px;
+                        font-family: 'Google Sans', Roboto, Arial, sans-serif;
+                        margin-left: 4px;
+                        transition: background-color 0.2s;
+                        padding: ${mobile ? '0' : '0 16px'};
+                        gap: ${mobile ? '0' : '8px'};
+                    `
             }
             updateButtonTheme()
             btn.title = '快捷提示'
