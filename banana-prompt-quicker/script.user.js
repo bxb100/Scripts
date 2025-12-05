@@ -230,8 +230,10 @@ OK，我想要：`,
             this.categories = new Set(['全部'])
             this.selectedCategory = 'all'
             this.sortMode = 'recommend' // 'recommend' | 'random'
+            this.nsfwEnabled = false
             this.loadPrompts()
             this.loadSortMode()
+            this.loadNsfwEnabled()
             this.currentPage = 1
             this.pageSize = this.isMobile() ? 8 : 12
             this.filteredPrompts = []
@@ -353,6 +355,16 @@ OK，我想要：`,
         async setSortMode(mode) {
             this.sortMode = mode
             await chrome.storage.local.set({ 'banana-sort-mode': mode })
+        }
+
+        async loadNsfwEnabled() {
+            const result = await chrome.storage.local.get(['banana-nsfw-enabled'])
+            this.nsfwEnabled = result['banana-nsfw-enabled'] === true
+        }
+
+        async setNsfwEnabled(enabled) {
+            this.nsfwEnabled = !!enabled
+            await chrome.storage.local.set({ 'banana-nsfw-enabled': this.nsfwEnabled })
         }
 
         async getCustomPrompts() {
@@ -629,6 +641,24 @@ OK，我想要：`,
             buttonsContainer.appendChild(addBtn)
 
             filterContainer.appendChild(dropdownContainer)
+
+            // NSFW Toggle
+            const nsfwLabel = document.createElement('label')
+            nsfwLabel.style.cssText = `display: flex; align-items: center; gap: 6px; padding: ${mobile ? '10px 12px' : '8px 12px'}; border: 1px solid ${colors.border}; border-radius: 16px; background: ${colors.surface}; color: ${colors.text}; font-size: ${mobile ? '14px' : '13px'}; user-select: none;`
+            const nsfwCheckbox = document.createElement('input')
+            nsfwCheckbox.type = 'checkbox'
+            nsfwCheckbox.id = 'banana-nsfw-toggle'
+            nsfwCheckbox.checked = !!this.nsfwEnabled
+            nsfwCheckbox.onchange = async () => {
+                await this.setNsfwEnabled(nsfwCheckbox.checked)
+                this.applyFilters(true)
+            }
+            const nsfwText = document.createElement('span')
+            nsfwText.textContent = '显示R18'
+            nsfwLabel.appendChild(nsfwCheckbox)
+            nsfwLabel.appendChild(nsfwText)
+
+            filterContainer.appendChild(nsfwLabel)
             filterContainer.appendChild(buttonsContainer)
 
             searchSection.appendChild(searchContainer)
@@ -757,6 +787,11 @@ OK，我想要：`,
 
                 // Category Filter
                 if (this.selectedCategory !== 'all' && prompt.category !== this.selectedCategory) {
+                    return false
+                }
+
+                // NSFW Filter
+                if (!this.nsfwEnabled && prompt.nsfw === true) {
                     return false
                 }
 
