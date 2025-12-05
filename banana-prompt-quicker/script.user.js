@@ -163,6 +163,14 @@
                 const b = await getJsonWithCache(extraPromptsDetails)
                 return a.filter((p) => p.sub_category !== '金主').toSpliced(11, 0, ...b)
             },
+            async getNsfwEnabled() {
+                const key = 'banana-nsfw-enabled'
+                const cache = await chrome.storage.local.get([key])
+                return cache[key] || false
+            },
+            async setNsfwEnabled(enabled) {
+                await chrome.storage.local.set({ 'banana-nsfw-enabled': enabled })
+            },
         }
     })()
 
@@ -231,9 +239,6 @@ OK，我想要：`,
             this.selectedCategory = 'all'
             this.sortMode = 'recommend' // 'recommend' | 'random'
             this.nsfwEnabled = false
-            this.loadPrompts()
-            this.loadSortMode()
-            this.loadNsfwEnabled()
             this.currentPage = 1
             this.pageSize = this.isMobile() ? 8 : 12
             this.filteredPrompts = []
@@ -241,6 +246,10 @@ OK，我想要：`,
             this.keyboardHandler = this.handleKeyboard.bind(this)
             this._isInitialized = false // 用于区分首次显示和重新显示
             this.randomMap = new Map()
+
+            this.loadNsfwEnabled()
+            this.loadPrompts()
+            this.loadSortMode()
         }
 
         async loadPrompts() {
@@ -252,7 +261,12 @@ OK，我想要：`,
             this.categories = new Set(['全部'])
             this.prompts.forEach((p) => {
                 if (p.category) {
-                    this.categories.add(p.category)
+                    if (this.nsfwEnabled || p.category !== 'NSFW') {
+                        this.categories.add(p.category)
+                    }
+                }
+                if (p.category === 'NSFW') {
+                    p.nsfw = true
                 }
             })
 
@@ -358,13 +372,8 @@ OK，我想要：`,
         }
 
         async loadNsfwEnabled() {
-            const result = await chrome.storage.local.get(['banana-nsfw-enabled'])
-            this.nsfwEnabled = result['banana-nsfw-enabled'] === true
-        }
-
-        async setNsfwEnabled(enabled) {
-            this.nsfwEnabled = !!enabled
-            await chrome.storage.local.set({ 'banana-nsfw-enabled': this.nsfwEnabled })
+            const result = await ConfigManager.getNsfwEnabled()
+            this.nsfwEnabled = result === true
         }
 
         async getCustomPrompts() {
@@ -641,24 +650,6 @@ OK，我想要：`,
             buttonsContainer.appendChild(addBtn)
 
             filterContainer.appendChild(dropdownContainer)
-
-            // NSFW Toggle
-            const nsfwLabel = document.createElement('label')
-            nsfwLabel.style.cssText = `display: flex; align-items: center; gap: 6px; padding: ${mobile ? '10px 12px' : '8px 12px'}; border: 1px solid ${colors.border}; border-radius: 16px; background: ${colors.surface}; color: ${colors.text}; font-size: ${mobile ? '14px' : '13px'}; user-select: none;`
-            const nsfwCheckbox = document.createElement('input')
-            nsfwCheckbox.type = 'checkbox'
-            nsfwCheckbox.id = 'banana-nsfw-toggle'
-            nsfwCheckbox.checked = !!this.nsfwEnabled
-            nsfwCheckbox.onchange = async () => {
-                await this.setNsfwEnabled(nsfwCheckbox.checked)
-                this.applyFilters(true)
-            }
-            const nsfwText = document.createElement('span')
-            nsfwText.textContent = '显示R18'
-            nsfwLabel.appendChild(nsfwCheckbox)
-            nsfwLabel.appendChild(nsfwText)
-
-            filterContainer.appendChild(nsfwLabel)
             filterContainer.appendChild(buttonsContainer)
 
             searchSection.appendChild(searchContainer)
@@ -1951,7 +1942,6 @@ OK，我想要：`,
     }
 
     // --- Initialization ---
-    const event = new Event('fire-modal')
     function init() {
         const hostname = window.location.hostname
         let adapter
@@ -1986,14 +1976,27 @@ OK，我想要：`,
                 modal.show()
             }
         })
+        document.body.addEventListener('toggle-nsfw', async () => {
+            if (modal) {
+                await ConfigManager.setNsfwEnabled(!modal.nsfwEnabled)
+                location.reload()
+            }
+        })
     }
 
     GM_addStyle('#prompts-modal, #prompts-modal *, #prompts-modal *::before, #prompts-modal *::after{ font-family: Roboto,"Helvetica Neue",sans-serif; };')
     GM_addStyle('#prompts-search-section, #prompts-search-section *{ box-sizing: content-box; line-height: normal; };')
     GM_addStyle('#prompts-modal button{ margin: 0; padding: 0;};')
-    GM_registerMenuCommand('🍌 Insert Banana Prompts', () => document.body.dispatchEvent(event), {
-        autoClose: true,
-    })
+    ;(async function () {
+        const v = await ConfigManager.getNsfwEnabled()
+        const nsfwEnabled = v ? '✅' : '❌'
+        GM_registerMenuCommand(`${nsfwEnabled} NSFW`, () => document.body.dispatchEvent(new Event('toggle-nsfw')), {
+            autoClose: true,
+        })
+        GM_registerMenuCommand('🍌 Insert Banana Prompts', () => document.body.dispatchEvent(new Event('fire-modal')), {
+            autoClose: true,
+        })
+    })()
 
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
         init()
