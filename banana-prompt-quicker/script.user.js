@@ -163,6 +163,14 @@
                 const b = await getJsonWithCache(extraPromptsDetails)
                 return a.filter((p) => p.sub_category !== '金主').toSpliced(11, 0, ...b)
             },
+            async getNsfwEnabled() {
+                const key = 'banana-nsfw-enabled'
+                const cache = await chrome.storage.local.get([key])
+                return cache[key] || false
+            },
+            async setNsfwEnabled(enabled) {
+                await chrome.storage.local.set({ 'banana-nsfw-enabled': enabled })
+            },
         }
     })()
 
@@ -230,8 +238,7 @@ OK，我想要：`,
             this.categories = new Set(['全部'])
             this.selectedCategory = 'all'
             this.sortMode = 'recommend' // 'recommend' | 'random'
-            this.loadPrompts()
-            this.loadSortMode()
+            this.nsfwEnabled = false
             this.currentPage = 1
             this.pageSize = this.isMobile() ? 8 : 12
             this.filteredPrompts = []
@@ -239,6 +246,10 @@ OK，我想要：`,
             this.keyboardHandler = this.handleKeyboard.bind(this)
             this._isInitialized = false // 用于区分首次显示和重新显示
             this.randomMap = new Map()
+
+            this.loadNsfwEnabled()
+            this.loadPrompts()
+            this.loadSortMode()
         }
 
         async loadPrompts() {
@@ -250,7 +261,12 @@ OK，我想要：`,
             this.categories = new Set(['全部'])
             this.prompts.forEach((p) => {
                 if (p.category) {
-                    this.categories.add(p.category)
+                    if (this.nsfwEnabled || p.category !== 'NSFW') {
+                        this.categories.add(p.category)
+                    }
+                }
+                if (p.category === 'NSFW') {
+                    p.nsfw = true
                 }
             })
 
@@ -353,6 +369,11 @@ OK，我想要：`,
         async setSortMode(mode) {
             this.sortMode = mode
             await chrome.storage.local.set({ 'banana-sort-mode': mode })
+        }
+
+        async loadNsfwEnabled() {
+            const result = await ConfigManager.getNsfwEnabled()
+            this.nsfwEnabled = result === true
         }
 
         async getCustomPrompts() {
@@ -757,6 +778,11 @@ OK，我想要：`,
 
                 // Category Filter
                 if (this.selectedCategory !== 'all' && prompt.category !== this.selectedCategory) {
+                    return false
+                }
+
+                // NSFW Filter
+                if (!this.nsfwEnabled && prompt.nsfw === true) {
                     return false
                 }
 
@@ -1916,7 +1942,6 @@ OK，我想要：`,
     }
 
     // --- Initialization ---
-    const event = new Event('fire-modal')
     function init() {
         const hostname = window.location.hostname
         let adapter
@@ -1951,14 +1976,27 @@ OK，我想要：`,
                 modal.show()
             }
         })
+        document.body.addEventListener('toggle-nsfw', async () => {
+            if (modal) {
+                await ConfigManager.setNsfwEnabled(!modal.nsfwEnabled)
+                location.reload()
+            }
+        })
     }
 
     GM_addStyle('#prompts-modal, #prompts-modal *, #prompts-modal *::before, #prompts-modal *::after{ font-family: Roboto,"Helvetica Neue",sans-serif; };')
     GM_addStyle('#prompts-search-section, #prompts-search-section *{ box-sizing: content-box; line-height: normal; };')
     GM_addStyle('#prompts-modal button{ margin: 0; padding: 0;};')
-    GM_registerMenuCommand('🍌 Insert Banana Prompts', () => document.body.dispatchEvent(event), {
-        autoClose: true,
-    })
+    ;(async function () {
+        const v = await ConfigManager.getNsfwEnabled()
+        const nsfwEnabled = v ? '✅' : '❌'
+        GM_registerMenuCommand(`${nsfwEnabled} NSFW`, () => document.body.dispatchEvent(new Event('toggle-nsfw')), {
+            autoClose: true,
+        })
+        GM_registerMenuCommand('🍌 Insert Banana Prompts', () => document.body.dispatchEvent(new Event('fire-modal')), {
+            autoClose: true,
+        })
+    })()
 
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
         init()
