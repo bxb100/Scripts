@@ -25,8 +25,10 @@
 // @grant               GM_openInTab
 // @grant               GM_registerMenuCommand
 // @grant               GM_addStyle
+// @grant               GM_getResourceURL
 // @connect             raw.githubusercontent.com
 // @connect             gist.githubusercontent.com
+// @resource            flash_mode.png https://pub-fb208db39987498a80d330d9899cd52b.r2.dev/flash_mode.png
 // @source              https://github.com/bxb100/Scripts/tree/main/banana-prompt-quicker
 // @homepage            https://github.com/bxb100/Scripts/tree/main/banana-prompt-quicker
 // @homepageURL         https://github.com/bxb100/Scripts/tree/main/banana-prompt-quicker
@@ -214,9 +216,10 @@
         return ConfigManager.getSelectors(platform, type)
     }
 
+    const flashModeUrl = GM_getResourceURL('flash_mode.png')
     const FLASH_MODE_PROMPT = {
         title: '灵光模式',
-        preview: 'https://pub-fb208db39987498a80d330d9899cd52b.r2.dev/flash_mode.png',
+        preview: flashModeUrl,
         prompt: `你现在进入【灵光模式: 有灵感就够了】。请按照以下步骤辅助我完成创作：
 1. 需求理解：分析我输入的粗略的想法描述（可能会包含图片）
 2. 需求澄清：要求我做出细节澄清，提出 3 个你认为最重要的选择题（A/B/C/D），以明确我的生图或修图需求（例如风格、构图、光影、具体相关细节等）。请一次性列出这三个问题
@@ -929,7 +932,7 @@ OK，我想要：`,
                 const btn = document.createElement('button')
                 btn.textContent = text
                 btn.disabled = disabled
-                btn.style.cssText = `padding: ${mobile ? '10px 20px' : '8px 18px'}; border: 1px solid ${colors.border}; border-radius: 12px; background: ${disabled ? colors.surface : colors.primary}; color: ${disabled ? colors.textSecondary : '#fff'}; cursor: ${disabled ? 'not-allowed' : 'pointer'}; font-size: ${mobile ? '14px' : '13px'}; transition: all 0.25s ease; opacity: ${disabled ? 0.5 : 1}; font-weight: 500;`
+                btn.style.cssText = `padding: ${mobile ? '10px 20px' : '8px 18px'}; border: 1px solid ${colors.border}; border-radius: 12px; background: ${disabled ? colors.surface : colors.primary}; color: ${disabled ? colors.textSecondary : '#fff'}; cursor: ${disabled ? 'not-allowed' : 'pointer'}; font-size: ${mobile ? '14px' : '13px'}; transition: all 0.25s ease; opacity: ${disabled ? 0.5 : 1}; font-weight: 500; user-select: none;`
                 if (!disabled) {
                     btn.onclick = onClick
                     if (!mobile) {
@@ -1043,12 +1046,53 @@ OK，我想要：`,
                 })
             }
 
+            const imgContainer = document.createElement('div')
+            imgContainer.style.cssText = `width: 100%; height: ${mobile ? '180px' : '200px'}; position: relative; background: ${colors.surfaceHover}; overflow: hidden;`
+
+            const spinner = document.createElement('div')
+            spinner.className = 'banana-spinner'
+            // Simple CSS spinner
+            GM_addStyle(`
+                @keyframes banana-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                .banana-spinner {
+                    width: 24px;
+                    height: 24px;
+                    border: 3px solid ${colors.border};
+                    border-top: 3px solid ${colors.primary};
+                    border-radius: 50%;
+                    animation: banana-spin 1s linear infinite;
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    margin-top: -12px;
+                    margin-left: -12px;
+                    z-index: 1;
+                }`)
+
             const img = GM_addElement('img', {
                 src: prompt.preview,
                 alt: prompt.title,
-                style: `width: 100%; height: ${mobile ? '180px' : '200px'}; object-fit: cover; flex-shrink: 0;`,
+                style: `width: 100%; height: 100%; object-fit: cover; flex-shrink: 0; opacity: 0; transition: opacity 0.3s ease; position: relative;`,
             })
+
+            img.onload = () => {
+                img.style.opacity = '1'
+                spinner.style.display = 'none'
+            }
+            img.onerror = () => {
+                spinner.style.display = 'none'
+            }
+
+            // Check if already cached/loaded
+            if (img.complete) {
+                img.style.opacity = '1'
+                spinner.style.display = 'none'
+            }
+
             img.onclick = () => this.adapter.insertPrompt(prompt.prompt)
+
+            imgContainer.appendChild(spinner)
+            imgContainer.appendChild(img)
 
             const favoriteBtn = document.createElement('button')
             const favBtnBg = isFavorite ? 'rgba(255,193,7,0.9)' : theme === 'dark' ? 'rgba(48,49,52,0.9)' : 'rgba(255,255,255,0.9)'
@@ -1163,7 +1207,7 @@ OK，我想要：`,
                 card.appendChild(deleteBtn)
             }
 
-            card.appendChild(img)
+            card.appendChild(imgContainer)
             card.appendChild(favoriteBtn)
             card.appendChild(content)
 
