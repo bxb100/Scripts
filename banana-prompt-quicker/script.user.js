@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             1.4.4
+// @version             1.4.5
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -163,9 +163,23 @@
                 return selectors?.[platform]?.[type]
             },
             async getPrompts() {
-                const a = await getJsonWithCache(promptsDetails)
+                const a = await getJsonWithCache(promptsDetails).then((data) => data.filter((p) => p.sub_category !== '金主'))
                 const b = await getJsonWithCache(extraPromptsDetails)
-                return a.filter((p) => p.sub_category !== '金主').toSpliced(11, 0, ...b)
+                for (const p of b) {
+                    let isInsert = false
+                    for (let i = 0; i < a.length; i++) {
+                        if (a[i].title === p.beforePrompt) {
+                            a.splice(i, 0, p)
+                            isInsert = true
+                            break
+                        }
+                    }
+                    if (isInsert) {
+                        continue
+                    }
+                    a.splice(11, 0, p)
+                }
+                return a
             },
             async getNsfwEnabled() {
                 const key = 'banana-nsfw-enabled'
