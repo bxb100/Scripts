@@ -2,15 +2,17 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             1.4.2
+// @version             1.4.3
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
 // @license             MIT
 // @match               https://aistudio.google.com/*
-// @match               https://gemini.google.com/*
 // @exclude             https://aistudio.google.com/app/_/*
-// @exclude             https://gemini.google.com/_/*/
+// @exclude             https://aistudio.google.com/about:blank
+// @match               https://gemini.google.com/*
+// @exclude             https://gemini.google.com/_/*
+// @exclude             https://gemini.google.com/about:blank
 // @match               https://*.hf.space/*
 // @match               https://x.com/i/grok
 // @match               https://*.perplexity.ai/*
@@ -214,7 +216,7 @@
 
     const FLASH_MODE_PROMPT = {
         title: '灵光模式',
-        preview: 'https://cdn.jsdelivr.net/gh/glidea/banana-prompt-quicker@main/images/flash_mode.png',
+        preview: 'https://pub-fb208db39987498a80d330d9899cd52b.r2.dev/flash_mode.png',
         prompt: `你现在进入【灵光模式: 有灵感就够了】。请按照以下步骤辅助我完成创作：
 1. 需求理解：分析我输入的粗略的想法描述（可能会包含图片）
 2. 需求澄清：要求我做出细节澄清，提出 3 个你认为最重要的选择题（A/B/C/D），以明确我的生图或修图需求（例如风格、构图、光影、具体相关细节等）。请一次性列出这三个问题
