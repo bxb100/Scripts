@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             1.4.5
+// @version             1.4.6
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -54,6 +54,11 @@
             window.trustedTypes.createPolicy('default', { createScriptURL: (s) => s, createScript: (s) => s, createHTML: (s) => s })
         }
     })()
+
+    GM_addStyle('#prompts-modal, #prompts-modal *, #prompts-modal *::before, #prompts-modal *::after{ font-family: Roboto,"Helvetica Neue",sans-serif; };')
+    GM_addStyle('#prompts-search-section, #prompts-search-section *{ box-sizing: content-box; line-height: normal; };')
+    GM_addStyle('#prompts-modal button{ margin: 0; padding: 0;};')
+    GM_addStyle(':root { --prompts-modal-z-index: 100; --base-z-index: 1; }')
 
     // --- Polyfills for Chrome Extension API ---
     // 模拟 chrome.storage 使用 GM_storage
@@ -478,7 +483,7 @@ OK，我想要：`,
             const modalElement = document.createElement('div')
             modalElement.id = 'prompts-modal'
             modalElement.style.cssText =
-                'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 10000;'
+                'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: var(--prompts-modal-z-index);'
 
             const container = document.createElement('div')
             container.style.cssText = `background: ${colors.background}; border-radius: ${mobile ? '24px 24px 0 0' : '20px'}; box-shadow: 0 20px 60px ${colors.shadow}; max-width: ${mobile ? '100%' : '900px'}; width: ${mobile ? '100%' : '90%'}; max-height: ${mobile ? '90vh' : '85vh'}; display: flex; flex-direction: column; ${mobile ? 'margin-top: auto;' : ''}; overflow: visible;`
@@ -510,7 +515,7 @@ OK，我想要：`,
         createSearchSection(colors, mobile) {
             const searchSection = document.createElement('div')
             searchSection.id = 'prompts-search-section'
-            searchSection.style.cssText = `padding: ${mobile ? '16px' : '20px 24px'}; border-bottom: 1px solid ${colors.border}; display: flex; ${mobile ? 'flex-direction: column; gap: 12px;' : 'align-items: center; gap: 16px;'}; overflow: visible; z-index: 100; position: relative;`
+            searchSection.style.cssText = `padding: ${mobile ? '16px' : '20px 24px'}; border-bottom: 1px solid ${colors.border}; display: flex; ${mobile ? 'flex-direction: column; gap: 12px;' : 'align-items: center; gap: 16px;'}; overflow: visible; position: relative;`
 
             // 搜索框容器
             const searchContainer = document.createElement('div')
@@ -549,7 +554,7 @@ OK，我想要：`,
             const tooltip = document.createElement('div')
             tooltip.id = 'sort-tooltip'
             tooltip.textContent = `切换${currentModeText}`
-            tooltip.style.cssText = `position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%); background: ${colors.surface}; color: ${colors.text}; padding: 6px 12px; border-radius: 8px; font-size: 12px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s; box-shadow: 0 4px 12px ${colors.shadow}; border: 1px solid ${colors.border}; z-index: 1000;`
+            tooltip.style.cssText = `position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%); background: ${colors.surface}; color: ${colors.text}; padding: 6px 12px; border-radius: 8px; font-size: 12px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s; box-shadow: 0 4px 12px ${colors.shadow}; border: 1px solid ${colors.border};`
 
             if (!mobile) {
                 sortBtn.onmouseenter = () => {
@@ -573,11 +578,11 @@ OK，我想要：`,
             searchContainer.appendChild(sortBtnContainer)
 
             const filterContainer = document.createElement('div')
-            filterContainer.style.cssText = `display: flex; gap: 8px; align-items: center; ${mobile ? 'justify-content: space-between; flex-wrap: wrap;' : ''}; position: relative; z-index: 101;`
+            filterContainer.style.cssText = `display: flex; gap: 8px; align-items: center; ${mobile ? 'justify-content: space-between; flex-wrap: wrap;' : ''}; position: relative;`
 
             // Category Dropdown
             const dropdownContainer = document.createElement('div')
-            dropdownContainer.style.cssText = `position: relative; z-index: 1000;`
+            dropdownContainer.style.cssText = `position: relative;`
 
             const dropdownTrigger = document.createElement('div')
             dropdownTrigger.id = 'category-dropdown-trigger'
@@ -597,7 +602,7 @@ OK，我想要：`,
 
             const optionsContainer = document.createElement('div')
             optionsContainer.id = 'category-options-container'
-            optionsContainer.style.cssText = `position: absolute; top: 100%; left: 0; margin-top: 8px; width: 100%; background: ${colors.surface}; border: 1px solid ${colors.border}; border-radius: 16px; box-shadow: 0 10px 40px ${colors.shadow}; display: none; flex-direction: column; overflow: hidden; backdrop-filter: blur(20px); max-height: 300px; overflow-y: auto; z-index: 9999;`
+            optionsContainer.style.cssText = `position: absolute; top: 100%; left: 0; margin-top: 8px; width: 100%; background: ${colors.surface}; border: 1px solid ${colors.border}; border-radius: 16px; box-shadow: 0 10px 40px ${colors.shadow}; display: none; flex-direction: column; overflow: hidden; backdrop-filter: blur(20px); max-height: 300px; overflow-y: auto; z-index: calc(var(--base-z-index) + 10);`
             optionsContainer.setAttribute('data-visible', 'false')
 
             // Toggle Logic
@@ -982,7 +987,7 @@ OK，我想要：`,
             }
             const otherPageInfo = document.createElement('span')
             otherPageInfo.textContent = `/ ${totalPages}`
-            otherPageInfo.style.width = '1.8em'
+            otherPageInfo.style.width = '1.8rem'
             pageInfo.style.cssText = `color: ${colors.text}; font-size: ${mobile ? '14px' : '13px'}; font-weight: 500; display: flex; align-items: center; justify-content: center;`
             pageInfo.appendChild(editablePageBtn)
             pageInfo.appendChild(otherPageInfo)
@@ -1250,7 +1255,8 @@ OK，我想要：`,
             const mobile = this.isMobile()
 
             const overlay = document.createElement('div')
-            overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 11000;'
+            overlay.style.cssText =
+                'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: calc(var(--prompts-modal-z-index) + 10);'
             overlay.onclick = (e) => {
                 if (e.target === overlay) document.body.removeChild(overlay)
             }
@@ -1411,7 +1417,7 @@ OK，我想要：`,
 
             // Category Dropdown for Add Prompt
             const categoryContainer = document.createElement('div')
-            categoryContainer.style.cssText = 'position: relative; width: 100%; z-index: 10;'
+            categoryContainer.style.cssText = 'position: relative; width: 100%;'
 
             const categoryTrigger = document.createElement('div')
             categoryTrigger.style.cssText = `width: 100%; padding: ${mobile ? '14px 16px' : '12px 16px'}; border: 1px solid ${colors.inputBorder}; border-radius: 12px; background: ${colors.inputBg}; color: ${colors.text}; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box;`
@@ -1431,7 +1437,7 @@ OK，我想要：`,
             categoryTrigger.appendChild(categoryArrow)
 
             const categoryOptions = document.createElement('div')
-            categoryOptions.style.cssText = `position: absolute; top: 100%; left: 0; margin-top: 8px; width: 100%; background: ${colors.surface}; border: 1px solid ${colors.border}; border-radius: 12px; box-shadow: 0 10px 40px ${colors.shadow}; display: none; flex-direction: column; overflow: hidden; backdrop-filter: blur(20px); max-height: 200px; overflow-y: auto; z-index: 100;`
+            categoryOptions.style.cssText = `position: absolute; top: 100%; left: 0; margin-top: 8px; width: 100%; background: ${colors.surface}; border: 1px solid ${colors.border}; border-radius: 12px; box-shadow: 0 10px 40px ${colors.shadow}; display: none; flex-direction: column; overflow: hidden; backdrop-filter: blur(20px); max-height: 200px; overflow-y: auto;`
 
             addCategories.forEach((cat) => {
                 const option = document.createElement('div')
@@ -2044,9 +2050,6 @@ OK，我想要：`,
         })
     }
 
-    GM_addStyle('#prompts-modal, #prompts-modal *, #prompts-modal *::before, #prompts-modal *::after{ font-family: Roboto,"Helvetica Neue",sans-serif; };')
-    GM_addStyle('#prompts-search-section, #prompts-search-section *{ box-sizing: content-box; line-height: normal; };')
-    GM_addStyle('#prompts-modal button{ margin: 0; padding: 0;};')
     ;(async function () {
         const v = await ConfigManager.getNsfwEnabled()
         const nsfwEnabled = v ? '✅' : '❌'
