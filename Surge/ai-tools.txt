@@ -89,6 +89,7 @@ DOMAIN,aida.googleapis.com
 DOMAIN-SUFFIX,appspot.com
 DOMAIN,labs.google
 DOMAIN,labs.google.com
+DOMAIN,mixboard.google.com
 
 # >> Zed
 DOMAIN,llm.zed.dev
