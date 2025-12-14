@@ -90,6 +90,9 @@ DOMAIN-SUFFIX,appspot.com
 DOMAIN,labs.google
 DOMAIN,labs.google.com
 DOMAIN,mixboard.google.com
+DOMAIN,opal.google
+DOMAIN,opal.google.com
+DOMAIN,appcatalyst.pa.googleapis.com
 
 # >> Zed
 DOMAIN,llm.zed.dev
