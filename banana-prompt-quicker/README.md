@@ -11,3 +11,8 @@
 - 支持 [Gemini](https://gemini.google.com/)
 - 支持 <img src="https://cdn.simpleicons.org/huggingface" width="18" /> Huggingface space, 例如 [Z-Image-Turbo](https://huggingface.co/spaces/Tongyi-MAI/Z-Image-Turbo)
 - 支持 [Grok](https://x.com/i/grok)
+- LinuxDo 社区公益
+  - [exacg](https://sd.exacg.cc/)
+  - [xuleo](https://linuxdo.xuleo.com)
+
+集成 [去除 Gemini 网页版图片水印的工具](https://linux.do/t/topic/1344795) 脚本
