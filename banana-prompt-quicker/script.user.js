@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             1.4.7
+// @version             1.4.8
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -43,22 +43,22 @@
 // ==/UserScript==
 //
 
-;(function () {
+; (function () {
     'use strict'
 
-    /*!
-     * Credit by Jan Biniok
-     * MIT License
-     * source: https://github.com/Tampermonkey/tampermonkey/issues/1334#issuecomment-2442399033
-     *
-     * Fix https://copilot.microsoft.com/ by CY Fung
-     * source: https://greasyfork.org/zh-CN/scripts/522884-default-trusted-types-policy-for-all-pages
-     */
-    ;(function () {
-        if (typeof window != 'undefined' && 'trustedTypes' in window && 'createPolicy' in window.trustedTypes && typeof window.trustedTypes.createPolicy == 'function' && window.trustedTypes.defaultPolicy == null) {
-            window.trustedTypes.createPolicy('default', { createScriptURL: (s) => s, createScript: (s) => s, createHTML: (s) => s })
-        }
-    })()
+        /*!
+         * Credit by Jan Biniok
+         * MIT License
+         * source: https://github.com/Tampermonkey/tampermonkey/issues/1334#issuecomment-2442399033
+         *
+         * Fix https://copilot.microsoft.com/ by CY Fung
+         * source: https://greasyfork.org/zh-CN/scripts/522884-default-trusted-types-policy-for-all-pages
+         */
+        ; (function () {
+            if (typeof window != 'undefined' && 'trustedTypes' in window && 'createPolicy' in window.trustedTypes && typeof window.trustedTypes.createPolicy == 'function' && window.trustedTypes.defaultPolicy == null) {
+                window.trustedTypes.createPolicy('default', { createScriptURL: (s) => s, createScript: (s) => s, createHTML: (s) => s })
+            }
+        })()
 
     GM_addStyle('#prompts-modal, #prompts-modal *, #prompts-modal *::before, #prompts-modal *::after{ font-family: Roboto,"Helvetica Neue",sans-serif; };')
     GM_addStyle('#prompts-search-section, #prompts-search-section *{ box-sizing: content-box; line-height: normal; };')
@@ -1105,6 +1105,7 @@ OK，我想要：`,
             }
             img.onerror = () => {
                 spinner.style.display = 'none'
+                imgContainer.onclick = img.onclick
             }
 
             // Check if already cached/loaded
@@ -1860,7 +1861,7 @@ OK，我想要：`,
             }
         }
 
-        waitForElements() {}
+        waitForElements() { }
 
         startObserver() {
             const observer = new MutationObserver(async () => {
@@ -2008,8 +2009,8 @@ OK，我想要：`,
         initButton() {
             return false
         }
-        waitForElements() {}
-        startObserver() {}
+        waitForElements() { }
+        startObserver() { }
     }
 
     // --- Initialization ---
@@ -2055,7 +2056,7 @@ OK，我想要：`,
         })
     }
 
-    ;(async function () {
+    ; (async function () {
         const v = await ConfigManager.getNsfwEnabled()
         const nsfwEnabled = v ? '✅' : '❌'
         GM_registerMenuCommand(`${nsfwEnabled} NSFW`, () => document.body.dispatchEvent(new Event('toggle-nsfw')), {
