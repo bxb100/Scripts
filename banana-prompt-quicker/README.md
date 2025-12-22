@@ -11,6 +11,7 @@
 - 支持 [Gemini](https://gemini.google.com/)
 - 支持 <img src="https://cdn.simpleicons.org/huggingface" width="18" /> Huggingface space, 例如 [Z-Image-Turbo](https://huggingface.co/spaces/Tongyi-MAI/Z-Image-Turbo)
 - 支持 [Grok](https://x.com/i/grok)
+- 支持 [Copilot](https://copilot.microsoft.com/)
 - LinuxDo 社区公益
   - [exacg](https://sd.exacg.cc/)
   - [xuleo](https://linuxdo.xuleo.com)
