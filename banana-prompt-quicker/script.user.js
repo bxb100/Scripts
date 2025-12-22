@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             1.4.8
+// @version             1.4.9
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -43,22 +43,22 @@
 // ==/UserScript==
 //
 
-; (function () {
+;(function () {
     'use strict'
 
-        /*!
-         * Credit by Jan Biniok
-         * MIT License
-         * source: https://github.com/Tampermonkey/tampermonkey/issues/1334#issuecomment-2442399033
-         *
-         * Fix https://copilot.microsoft.com/ by CY Fung
-         * source: https://greasyfork.org/zh-CN/scripts/522884-default-trusted-types-policy-for-all-pages
-         */
-        ; (function () {
-            if (typeof window != 'undefined' && 'trustedTypes' in window && 'createPolicy' in window.trustedTypes && typeof window.trustedTypes.createPolicy == 'function' && window.trustedTypes.defaultPolicy == null) {
-                window.trustedTypes.createPolicy('default', { createScriptURL: (s) => s, createScript: (s) => s, createHTML: (s) => s })
-            }
-        })()
+    /*!
+     * Credit by Jan Biniok
+     * MIT License
+     * source: https://github.com/Tampermonkey/tampermonkey/issues/1334#issuecomment-2442399033
+     *
+     * Fix https://copilot.microsoft.com/ by CY Fung
+     * source: https://greasyfork.org/zh-CN/scripts/522884-default-trusted-types-policy-for-all-pages
+     */
+    ;(function () {
+        if (typeof window != 'undefined' && 'trustedTypes' in window && 'createPolicy' in window.trustedTypes && typeof window.trustedTypes.createPolicy == 'function' && window.trustedTypes.defaultPolicy == null) {
+            window.trustedTypes.createPolicy('default', { createScriptURL: (s) => s, createScript: (s) => s, createHTML: (s) => s })
+        }
+    })()
 
     GM_addStyle('#prompts-modal, #prompts-modal *, #prompts-modal *::before, #prompts-modal *::after{ font-family: Roboto,"Helvetica Neue",sans-serif; };')
     GM_addStyle('#prompts-search-section, #prompts-search-section *{ box-sizing: content-box; line-height: normal; };')
@@ -1861,7 +1861,7 @@ OK，我想要：`,
             }
         }
 
-        waitForElements() { }
+        waitForElements() {}
 
         startObserver() {
             const observer = new MutationObserver(async () => {
@@ -2005,12 +2005,86 @@ OK，我想要：`,
             return getDefaultThemeColors(this.getCurrentTheme())
         }
 
-        // 通用适配器不需要按钮
-        initButton() {
-            return false
+        createButton() {
+            const btn = document.createElement('div')
+            btn.id = 'banana-floating-btn'
+            btn.textContent = '🍌'
+            btn.title = 'Banana Prompts'
+
+            const isMobile = window.innerWidth <= 768
+            const size = isMobile ? '40px' : '48px'
+            const fontSize = isMobile ? '20px' : '24px'
+
+            btn.style.cssText = `
+                position: fixed;
+                top: 50%;
+                right: 0;
+                width: ${size};
+                height: ${size};
+                transform: translateY(-50%) translateX(50%);
+                background: rgba(255, 255, 255, 0.2);
+                backdrop-filter: blur(8px);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: 50% 0 0 50%;
+                box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+                cursor: pointer;
+                z-index: var(--prompts-modal-z-index);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: ${fontSize};
+                opacity: 0.5;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                user-select: none;
+                -webkit-tap-highlight-color: transparent;
+            `
+
+            // Hover/Active Effects
+            const onEnter = () => {
+                btn.style.transform = 'translateY(-50%) translateX(0)'
+                btn.style.opacity = '1'
+                btn.style.background = 'rgba(255, 225, 0, 0.9)' // Banana yellow
+                btn.style.boxShadow = '-4px 0 16px rgba(255, 200, 0, 0.4)'
+            }
+
+            const onLeave = () => {
+                btn.style.transform = 'translateY(-50%) translateX(50%)'
+                btn.style.opacity = '0.5'
+                btn.style.background = 'rgba(255, 255, 255, 0.2)'
+                btn.style.boxShadow = '-2px 0 8px rgba(0, 0, 0, 0.1)'
+            }
+
+            btn.addEventListener('mouseenter', onEnter)
+            btn.addEventListener('mouseleave', onLeave)
+
+            // Mobile touch support
+            if (isMobile) {
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault() // prevent mouse emulation
+                    onEnter()
+                })
+                btn.addEventListener('touchend', () => {
+                    setTimeout(onLeave, 1500)
+                    if (this.modal) this.modal.show()
+                })
+            }
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation()
+                if (this.modal) this.modal.show()
+            })
+
+            return btn
         }
-        waitForElements() { }
-        startObserver() { }
+
+        async initButton() {
+            if (document.getElementById('banana-floating-btn')) return
+            const btn = this.createButton()
+            document.body.appendChild(btn)
+        }
+
+        waitForElements() {}
+        startObserver() {}
     }
 
     // --- Initialization ---
@@ -2027,6 +2101,11 @@ OK，我想要：`,
         }
         const modal = new BananaModal(adapter)
         adapter.modal = modal
+
+        // initialize button for all adapters
+        if (adapter.initButton) {
+            adapter.initButton()
+        }
 
         // 只在特定平台初始化按钮和观察器
         if (hostname.includes('aistudio') || hostname.includes('gemini')) {
@@ -2056,7 +2135,7 @@ OK，我想要：`,
         })
     }
 
-    ; (async function () {
+    ;(async function () {
         const v = await ConfigManager.getNsfwEnabled()
         const nsfwEnabled = v ? '✅' : '❌'
         GM_registerMenuCommand(`${nsfwEnabled} NSFW`, () => document.body.dispatchEvent(new Event('toggle-nsfw')), {
