@@ -16,5 +16,3 @@
 - LinuxDo 社区公益
   - [exacg](https://sd.exacg.cc/)
   - [xuleo](https://linuxdo.xuleo.com)
-
-集成 [去除 Gemini 网页版图片水印的工具](https://linux.do/t/topic/1344795) 脚本
