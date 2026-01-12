@@ -55,6 +55,7 @@ DOMAIN,antigravity-unleash.goog
 DOMAIN,lh3.googleusercontent.com
 DOMAIN,daily-cloudcode-pa.sandbox.googleapis.com
 DOMAIN-SUFFIX,us-central1.run.app
+DOMAIN,daily-cloudcode-pa.googleapis.com
 
 # >> POE
 DOMAIN-SUFFIX,poe.com
