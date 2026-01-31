@@ -29,6 +29,7 @@ DOMAIN,bard.google.com
 DOMAIN,gemini.google.com
 DOMAIN,play.google.com
 DOMAIN,mtalk.google.com
+DOMAIN,www.google.com
 
 # >> Google DeepMind
 DOMAIN-SUFFIX,deepmind.com
