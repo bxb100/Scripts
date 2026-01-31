@@ -28,6 +28,7 @@ DOMAIN-SUFFIX,claude.ai
 DOMAIN,bard.google.com
 DOMAIN,gemini.google.com
 DOMAIN,play.google.com
+DOMAIN,mtalk.google.com
 
 # >> Google DeepMind
 DOMAIN-SUFFIX,deepmind.com
