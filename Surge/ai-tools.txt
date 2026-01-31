@@ -25,8 +25,9 @@ DOMAIN-SUFFIX,anthropic.com
 DOMAIN-SUFFIX,claude.ai
 
 # >> Google Gemini
-DOMAIN-SUFFIX,bard.google.com
-DOMAIN-SUFFIX,gemini.google.com
+DOMAIN,bard.google.com
+DOMAIN,gemini.google.com
+DOMAIN,play.google.com
 
 # >> Google DeepMind
 DOMAIN-SUFFIX,deepmind.com
