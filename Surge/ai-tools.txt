@@ -19,6 +19,7 @@ DOMAIN-KEYWORD,openai
 
 # >> Perplexity
 DOMAIN-SUFFIX,perplexity.ai
+DOMAIN,perplexity-ai.cloudflareaccess.com
 
 # >> Claude
 DOMAIN-SUFFIX,anthropic.com
