@@ -2,7 +2,7 @@
 // @name                Banana Prompt Quicker
 // @namespace           gemini.script
 // @tag                 entertainment
-// @version             1.4.12
+// @version             1.4.13
 // @description         Prompts quicker is ALL you 🍌 need - UserScript版
 // @author              Glidea
 // @author              Johnbi
@@ -1745,6 +1745,17 @@ OK，我想要：`,
         }
 
         async findClosestInsertButton() {
+            let xpath = document.evaluate(
+                "//button[.//span[contains(text(), 'Create image')]]",
+                document,
+                null,
+                XPathResult.FIRST_ORDERED_NODE_TYPE,
+                null
+            ).singleNodeValue
+            if (xpath) {
+                return xpath
+            }
+
             let el = document.querySelector('button.toolbox-drawer-item-deselect-button:has(img.img-icon)')
             if (el) {
                 return el
