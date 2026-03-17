@@ -108,5 +108,5 @@ DOMAIN-SUFFIX,diabrowser.engineering
 
 # >> Jetbrains
 DOMAIN-SUFFIX,jetbrains.ai
+DOMAIN,junie.jetbrains.com
 DOMAIN,ingrazzio-cloud-prod.labs.jb.gg
-
