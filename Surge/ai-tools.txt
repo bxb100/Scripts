@@ -99,6 +99,7 @@ DOMAIN,mixboard.google.com
 DOMAIN,opal.google
 DOMAIN,opal.google.com
 DOMAIN,appcatalyst.pa.googleapis.com
+PROCESS-NAME,Gemini
 
 # >> Zed
 DOMAIN,llm.zed.dev
