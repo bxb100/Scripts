@@ -2,6 +2,7 @@
 # $ meta_description This file contains domains of OpenAI, Claude.
 
 # >> OpenAI / ChatGPT
+PROCESS-NAME,Codex
 # OpenAI A/B Flag, no geo blocking
 # DOMAIN,api.statsig.com
 DOMAIN-SUFFIX,openai.com
@@ -17,13 +18,18 @@ DOMAIN-KEYWORD,openai
 # DOMAIN,openaicomproductionae4b.blob.core.windows.net
 # DOMAIN,production-openaicom-storage.azureedge.net
 
-# >> Perplexity
-DOMAIN-SUFFIX,perplexity.ai
-DOMAIN,perplexity-ai.cloudflareaccess.com
-
-# >> Claude
-DOMAIN-SUFFIX,anthropic.com
-DOMAIN-SUFFIX,claude.ai
+# >> Google 产品
+PROCESS-NAME,Gemini
+DOMAIN,jules.google.com
+DOMAIN-SUFFIX,withgoogle.com
+DOMAIN,aida.googleapis.com
+DOMAIN-SUFFIX,appspot.com
+DOMAIN,labs.google
+DOMAIN,labs.google.com
+DOMAIN,mixboard.google.com
+DOMAIN,opal.google
+DOMAIN,opal.google.com
+DOMAIN,appcatalyst.pa.googleapis.com
 
 # >> Google Gemini
 DOMAIN,bard.google.com
@@ -61,6 +67,14 @@ DOMAIN,daily-cloudcode-pa.sandbox.googleapis.com
 DOMAIN-SUFFIX,us-central1.run.app
 DOMAIN,daily-cloudcode-pa.googleapis.com
 
+# >> Perplexity
+DOMAIN-SUFFIX,perplexity.ai
+DOMAIN,perplexity-ai.cloudflareaccess.com
+
+# >> Claude
+DOMAIN-SUFFIX,anthropic.com
+DOMAIN-SUFFIX,claude.ai
+
 # >> POE
 DOMAIN-SUFFIX,poe.com
 
@@ -87,19 +101,6 @@ DOMAIN,api.github.com
 
 # >> groq
 DOMAIN-SUFFIX,groq.com
-
-# >> Google 产品
-DOMAIN,jules.google.com
-DOMAIN-SUFFIX,withgoogle.com
-DOMAIN,aida.googleapis.com
-DOMAIN-SUFFIX,appspot.com
-DOMAIN,labs.google
-DOMAIN,labs.google.com
-DOMAIN,mixboard.google.com
-DOMAIN,opal.google
-DOMAIN,opal.google.com
-DOMAIN,appcatalyst.pa.googleapis.com
-PROCESS-NAME,Gemini
 
 # >> Zed
 DOMAIN,llm.zed.dev
