@@ -103,7 +103,8 @@ DOMAIN,api.github.com
 DOMAIN-SUFFIX,groq.com
 
 # >> Zed
-DOMAIN,llm.zed.dev
+DOMAIN,cloud.zed.dev
+DOMAIN,llm-staging.zed.dev
 
 # >> DIA
 DOMAIN-SUFFIX,diabrowser.engineering
