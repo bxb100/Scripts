@@ -99,6 +99,9 @@ DOMAIN-SUFFIX,openart.ai
 # see https://github.com/SukkaW/Surge/pull/46#discussion_r1849641627
 DOMAIN,api.github.com
 
+# >> Microsoft Copilot
+DOMAIN,copilot.microsoft.com
+
 # >> groq
 DOMAIN-SUFFIX,groq.com
 
