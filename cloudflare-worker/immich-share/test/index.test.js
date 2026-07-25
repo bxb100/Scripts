@@ -1,14 +1,26 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import worker from './index.js';
+import worker from '../src/index.ts';
 
 const PUBLIC_ORIGIN = 'https://share.example';
 const VALID_KEY = 'AbCdEfGhIjKlMnOpQrSt';
 
-function createEnv(handler = () => new Response('ok')) {
+function createEnv(
+	handler = () => new Response('ok'),
+	assetHandler = (request) =>
+		new Response(request.method === 'HEAD' ? null : '<!DOCTYPE html><title>Photo Gallery</title>', {
+			headers: {
+				'cache-control': 'public, max-age=0, must-revalidate',
+				'content-type': 'text/html',
+				etag: '"gallery-asset"',
+			},
+		}),
+) {
 	const fetch = vi.fn(handler);
+	const assetFetch = vi.fn(assetHandler);
 	return {
-		env: { NAS: { fetch } },
+		env: { ASSETS: { fetch: assetFetch }, NAS: { fetch } },
+		assetFetch,
 		fetch,
 	};
 }
@@ -23,32 +35,63 @@ afterEach(() => {
 
 describe('gallery routes', () => {
 	it('serves valid gallery GET and HEAD requests without using the upstream', async () => {
-		const { env, fetch } = createEnv();
+		const { env, assetFetch, fetch } = createEnv();
 
 		const getResponse = await dispatch(`/share/${VALID_KEY}`, env);
 		const headResponse = await dispatch(`/share/${VALID_KEY}/`, env, { method: 'HEAD' });
 
 		expect(getResponse.status).toBe(200);
 		expect(getResponse.headers.get('content-type')).toBe('text/html; charset=utf-8');
+		expect(getResponse.headers.get('cache-control')).toBe('public, max-age=0, must-revalidate');
+		expect(getResponse.headers.get('content-security-policy')).toContain("default-src 'none'");
+		expect(getResponse.headers.get('cross-origin-resource-policy')).toBe('same-origin');
+		expect(getResponse.headers.get('permissions-policy')).toBe('camera=(), geolocation=(), microphone=()');
+		expect(getResponse.headers.get('x-frame-options')).toBe('DENY');
 		expect(await getResponse.text()).toContain('<title>Photo Gallery</title>');
 		expect(headResponse.status).toBe(200);
 		expect(await headResponse.text()).toBe('');
+		expect(assetFetch).toHaveBeenCalledTimes(2);
+		expect(assetFetch.mock.calls[0][0].method).toBe('GET');
+		expect(assetFetch.mock.calls[0][0].url).toBe(`${PUBLIC_ORIGIN}/index.html`);
+		expect(assetFetch.mock.calls[1][0].method).toBe('HEAD');
 		expect(fetch).not.toHaveBeenCalled();
+	});
+
+	it('returns a safe error and structured log when the gallery asset binding fails', async () => {
+		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const { env } = createEnv(undefined, () => {
+			throw new Error(`private asset failure for ${VALID_KEY}`);
+		});
+
+		const response = await dispatch(`/share/${VALID_KEY}`, env);
+
+		expect(response.status).toBe(500);
+		expect(response.headers.get('cache-control')).toBeNull();
+		expect(await response.text()).toBe('Gallery unavailable');
+		expect(JSON.parse(errorSpy.mock.calls[0][0])).toEqual({
+			level: 'error',
+			event: 'gallery_asset_fetch_failed',
+			method: 'GET',
+			errorType: 'Error',
+		});
+		expect(errorSpy.mock.calls.flat().join(' ')).not.toContain(VALID_KEY);
 	});
 
 	it.each([
 		['GET', '/'],
+		['GET', '/index.html'],
 		['GET', '/share/too-short'],
 		['GET', `/share/${VALID_KEY}/extra`],
 		['GET', `/share/${VALID_KEY}%2Fextra`],
 		['POST', `/share/${VALID_KEY}`],
 	])('rejects %s %s', async (method, path) => {
-		const { env, fetch } = createEnv();
+		const { env, assetFetch, fetch } = createEnv();
 
 		const response = await dispatch(path, env, { method });
 
 		expect(response.status).toBe(403);
 		expect(await response.text()).toBe('Share access only');
+		expect(assetFetch).not.toHaveBeenCalled();
 		expect(fetch).not.toHaveBeenCalled();
 	});
 });
@@ -75,6 +118,7 @@ describe('API allowlist', () => {
 		['GET', `/api/assets/asset-id/thumbnail?key=${VALID_KEY}&size=small`],
 		['GET', `/api/assets/asset-id/thumbnail?key=${VALID_KEY}&size=original`],
 		['GET', `/api/assets/asset-id/thumbnail?key=${VALID_KEY}&size=fullsize`],
+		['GET', `/api/assets/asset%2Fid/thumbnail?key=${VALID_KEY}&size=preview`],
 		['DELETE', `/api/assets/asset-id/thumbnail?key=${VALID_KEY}&size=fullsize`],
 		['GET', `/api/not-allowed?key=${VALID_KEY}`],
 	])('rejects %s %s', async (method, path) => {
@@ -108,6 +152,7 @@ describe('upstream request sanitization', () => {
 			'cf-connecting-ip': '203.0.113.8',
 			cookie: 'session=secret',
 			'x-api-key': 'secret',
+			'x-custom-internal-header': 'private',
 			'x-forwarded-for': '198.51.100.3',
 			'x-immich-share-key': 'private-share-key',
 			'x-immich-share-slug': 'private-share-slug',
@@ -119,10 +164,10 @@ describe('upstream request sanitization', () => {
 		const response = await dispatch(path, env, { headers: requestHeaders });
 
 		expect(response.status).toBe(200);
-		expect(response.headers.get('cache-control')).toBe('no-store');
-		expect(response.headers.get('cdn-cache-control')).toBeNull();
-		expect(response.headers.get('cloudflare-cdn-cache-control')).toBeNull();
-		expect(response.headers.get('expires')).toBeNull();
+		expect(response.headers.get('cache-control')).toBe('public, max-age=3600');
+		expect(response.headers.get('cdn-cache-control')).toBe('public, max-age=7200');
+		expect(response.headers.get('cloudflare-cdn-cache-control')).toBe('public, max-age=10800');
+		expect(response.headers.get('expires')).toBe('Thu, 23 Jul 2026 06:00:00 GMT');
 		expect(response.headers.get('etag')).toBe('"timeline-etag"');
 		const [target, options] = fetch.mock.calls[0];
 		const targetUrl = new URL(target);
@@ -148,6 +193,7 @@ describe('upstream request sanitization', () => {
 			'authorization',
 			'cookie',
 			'x-api-key',
+			'x-custom-internal-header',
 			'x-immich-share-key',
 			'x-immich-share-slug',
 			'x-immich-session-token',
@@ -171,9 +217,47 @@ describe('upstream request sanitization', () => {
 		});
 		expect(options).not.toHaveProperty('cache');
 	});
+
+	it.each([
+		['Cache-Control: no-store', { 'cache-control': 'no-store' }, 'no-store'],
+		['Cache-Control: no-cache', { 'cache-control': 'public, no-cache' }, 'no-cache'],
+		['Cache-Control precedence', { 'cache-control': 'no-cache, no-store' }, 'no-store'],
+		['Pragma: no-cache', { pragma: 'no-cache' }, 'no-cache'],
+	])('respects %s when fetching from the upstream', async (_name, headers, expectedCache) => {
+		const { env, fetch } = createEnv(() => new Response(null));
+
+		await dispatch(`/api/assets/asset-id/thumbnail?key=${VALID_KEY}&size=preview`, env, { headers });
+
+		const [, options] = fetch.mock.calls[0];
+		expect(options.cache).toBe(expectedCache);
+		expect(options.headers.has('cache-control')).toBe(false);
+		expect(options.headers.has('pragma')).toBe(false);
+	});
 });
 
 describe('upstream response sanitization', () => {
+	it('maps invalid transformed payloads to safe errors with structured logs', async () => {
+		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const { env } = createEnv(
+			() =>
+				new Response('private invalid payload', {
+					headers: { 'content-type': 'application/json' },
+				}),
+		);
+
+		const response = await dispatch(`/api/shared-links/me?key=${VALID_KEY}`, env);
+
+		expect(response.status).toBe(502);
+		expect(response.headers.get('cache-control')).toBeNull();
+		expect(await response.text()).toBe('Immich request failed');
+		expect(JSON.parse(errorSpy.mock.calls[0][0])).toEqual({
+			level: 'error',
+			event: 'upstream_payload_invalid',
+			endpoint: '/api/shared-links/me',
+		});
+		expect(errorSpy.mock.calls.flat().join(' ')).not.toContain('private invalid payload');
+	});
+
 	it('returns only allowlisted shared-link fields', async () => {
 		const upstreamPayload = {
 			album: {
@@ -216,8 +300,8 @@ describe('upstream response sanitization', () => {
 			showMetadata: true,
 		});
 		expect(response.headers.get('set-cookie')).toBeNull();
-		expect(response.headers.get('cache-control')).toBe('public, max-age=120');
-		expect(response.headers.get('cdn-cache-control')).toBe('public, max-age=300');
+		expect(response.headers.get('cache-control')).toBeNull();
+		expect(response.headers.get('cdn-cache-control')).toBeNull();
 		expect(response.headers.get('etag')).toBeNull();
 		const [, options] = fetch.mock.calls[0];
 		expect(options.headers.has('if-modified-since')).toBe(false);
@@ -263,9 +347,9 @@ describe('upstream response sanitization', () => {
 				description: 'Mountain',
 			},
 		});
-		expect(response.headers.get('cache-control')).toBe('private, max-age=60');
+		expect(response.headers.get('cache-control')).toBeNull();
 		expect(response.headers.get('last-modified')).toBeNull();
-		expect(response.headers.get('vary')).toBe('accept');
+		expect(response.headers.get('vary')).toBeNull();
 		const [, options] = fetch.mock.calls[0];
 		expect(options.headers.has('if-modified-since')).toBe(false);
 	});
@@ -333,7 +417,7 @@ describe('upstream response sanitization', () => {
 		expect(response.headers.get('set-cookie')).toBeNull();
 	});
 
-	it('keeps timeline 304 responses uncached', async () => {
+	it('passes through timeline 304 response headers', async () => {
 		const { env } = createEnv(
 			() =>
 				new Response(null, {
@@ -353,10 +437,10 @@ describe('upstream response sanitization', () => {
 		});
 
 		expect(response.status).toBe(304);
-		expect(response.headers.get('cache-control')).toBe('no-store');
-		expect(response.headers.get('cdn-cache-control')).toBeNull();
-		expect(response.headers.get('cloudflare-cdn-cache-control')).toBeNull();
-		expect(response.headers.get('expires')).toBeNull();
+		expect(response.headers.get('cache-control')).toBe('public, max-age=3600');
+		expect(response.headers.get('cdn-cache-control')).toBe('public, max-age=7200');
+		expect(response.headers.get('cloudflare-cdn-cache-control')).toBe('public, max-age=10800');
+		expect(response.headers.get('expires')).toBe('Thu, 23 Jul 2026 06:00:00 GMT');
 		expect(response.headers.get('etag')).toBe('"timeline-etag"');
 	});
 
@@ -377,7 +461,7 @@ describe('upstream response sanitization', () => {
 	});
 
 	it('maps upstream exceptions and error responses to safe errors', async () => {
-		vi.spyOn(console, 'error').mockImplementation(() => {});
+		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 		const thrown = createEnv(() => {
 			throw new Error('private upstream failure');
 		});
@@ -394,9 +478,17 @@ describe('upstream response sanitization', () => {
 
 		expect(thrownResponse.status).toBe(502);
 		expect(await thrownResponse.text()).toBe('Immich request failed');
-		expect(thrownResponse.headers.get('cache-control')).toBe('no-store');
+		expect(thrownResponse.headers.get('cache-control')).toBeNull();
 		expect(unavailableResponse.status).toBe(503);
 		expect(await unavailableResponse.text()).toBe('Immich request failed');
 		expect(unavailableResponse.headers.get('set-cookie')).toBeNull();
+		expect(JSON.parse(errorSpy.mock.calls[0][0])).toEqual({
+			level: 'error',
+			event: 'upstream_fetch_failed',
+			method: 'GET',
+			path: '/api/timeline/buckets',
+			errorType: 'Error',
+		});
+		expect(errorSpy.mock.calls.flat().join(' ')).not.toContain('private upstream failure');
 	});
 });

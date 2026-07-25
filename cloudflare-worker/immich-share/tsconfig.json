@@ -1,0 +1,17 @@
+{
+	"compilerOptions": {
+		"exactOptionalPropertyTypes": true,
+		"forceConsistentCasingInFileNames": true,
+		"isolatedModules": true,
+		"lib": ["ES2022"],
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"noEmit": true,
+		"noUncheckedIndexedAccess": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"target": "ES2022",
+		"types": ["./worker-configuration.d.ts"]
+	},
+	"include": ["src/index.ts"]
+}

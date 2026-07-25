@@ -1,4 +1,4 @@
-const GALLERY_HTML = String.raw`<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -187,11 +187,11 @@ const GALLERY_HTML = String.raw`<!DOCTYPE html>
     .status-card {
       max-width: 34rem;
       padding: 20px 24px;
-      border-radius: 16px;
-      background: rgb(34 36 53 / 0.96);
-      box-shadow:
+      /*border-radius: 16px;*/
+      /*background: rgb(34 36 53 / 0.96);*/
+      /*box-shadow:
         0 0 2px 0 rgb(255 255 255 / 0.2),
-        0 4px 28px 0 rgb(0 0 0 / 0.4);
+        0 4px 28px 0 rgb(0 0 0 / 0.4);*/
     }
     .spinner {
       width: 24px;
@@ -394,7 +394,7 @@ const GALLERY_HTML = String.raw`<!DOCTYPE html>
           return asset.isImage && !asset.isTrashed && (!asset.status || asset.status === 'active');
         });
 
-      const initialItemLimit = 50;
+      const initialItemLimit = 30;
       const initialAssets = timelineAssets.slice(0, initialItemLimit);
       const remainingAssets = timelineAssets.slice(initialItemLimit);
       const initialItems = await mapWithConcurrency(initialAssets, 6, function loadInitialAsset(asset, index) {
@@ -1017,7 +1017,7 @@ const GALLERY_HTML = String.raw`<!DOCTYPE html>
       };
     }
 
-    loadPhotoGalleryData()
+    void loadPhotoGalleryData()
       .then(function onGalleryLoaded(result) {
         if (result.items.length === 0) {
           setStatus('This album is empty', 'No image assets were returned by Immich.');
@@ -1025,7 +1025,7 @@ const GALLERY_HTML = String.raw`<!DOCTYPE html>
         }
         const hydrateBox = startGallery(result.items);
         if (result.remainingAssets.length > 0) {
-          mapWithConcurrency(result.remainingAssets, 6, async function loadRemainingAsset(asset, index) {
+          void mapWithConcurrency(result.remainingAssets, 6, async function loadRemainingAsset(asset, index) {
             const itemIndex = result.remainingOffset + index;
             const item = await loadGalleryItem(asset, itemIndex, result.showMetadata);
             await hydrateBox(itemIndex, item);
@@ -1040,6 +1040,4 @@ const GALLERY_HTML = String.raw`<!DOCTYPE html>
       });
   </script>
 </body>
-</html>`;
-
-export default GALLERY_HTML;
+</html>

@@ -3,14 +3,18 @@
 	"version": "0.0.0",
 	"private": true,
 	"scripts": {
+		"check": "npm run typecheck && npm test",
 		"deploy": "wrangler deploy",
 		"dev": "wrangler dev",
 		"start": "wrangler dev",
-		"test": "vitest"
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"typecheck": "wrangler types --check && tsc --noEmit"
 	},
 	"devDependencies": {
 		"@cloudflare/vitest-pool-workers": "^0.12.4",
+		"typescript": "~5.9.3",
 		"vitest": "~3.2.0",
-		"wrangler": "^4.111.0"
+		"wrangler": "^4.112.0"
 	}
 }
