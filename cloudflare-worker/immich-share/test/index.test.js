@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import galleryHtml from '../public/index.html?raw';
 import worker from '../src/index.ts';
 
 const PUBLIC_ORIGIN = 'https://share.example';
@@ -31,6 +32,90 @@ function dispatch(path, env, init) {
 
 afterEach(() => {
 	vi.restoreAllMocks();
+});
+
+describe('gallery virtualization', () => {
+	it('bounds DOM work to the active render window', () => {
+		expect(galleryHtml).toContain('function getGridWindow(');
+		expect(galleryHtml).toContain('const mountedIndexes = new Set();');
+		expect(galleryHtml).toContain('for (const index of renderIndexes)');
+		expect(galleryHtml).toContain('releaseBoxElements(item, index);');
+	});
+
+	it('prioritizes visible assets before the hydration overscan', () => {
+		expect(galleryHtml).toContain('requestHydrationWindow(');
+		expect(galleryHtml).toContain(
+			'requestWindow(start, end, priorityStart, priorityEnd, focusedIndex)',
+		);
+		expect(galleryHtml).toContain(
+			'for (let index = visibleStart; index <= visibleEnd; index += 1)',
+		);
+	});
+
+	it('snaps recycled cards and schedules trailing scroll frames', () => {
+		expect(galleryHtml).toContain('pendingScrollFrames = 2;');
+		expect(galleryHtml).toContain(
+			"window.addEventListener('scrollend', scheduleRender, true);",
+		);
+		expect(galleryHtml).toContain(
+			'if (!animate) {\n          itemSpringForEach(item, springGoToEnd);',
+		);
+		expect(galleryHtml).toContain(
+			'mountedIndexes.has(index) && activeSpringIndexes.has(index)',
+		);
+	});
+
+	it('allows skeleton cards to enter focused mode', () => {
+		expect(galleryHtml).not.toContain(
+			'.box.skeleton {\n      background-image: none;\n      cursor: default;\n      pointer-events: none;',
+		);
+		expect(galleryHtml).not.toContain('if (item.skeleton) continue;');
+		expect(galleryHtml).toContain('const focused = hashIndex ?? null;');
+		expect(galleryHtml).toContain('if (item.previewUrl) {');
+	});
+
+	it('keeps skeleton card labels empty until hydration completes', () => {
+		expect(galleryHtml).toContain(
+			"promptNode.textContent = item.skeleton ? '' : item.prompt;",
+		);
+		expect(galleryHtml).toContain(
+			"descriptionCardNode.textContent = item.skeleton ? '' : item.prompt;",
+		);
+		expect(galleryHtml).toContain('box.promptNode.textContent = box.prompt;');
+		expect(galleryHtml).toContain(
+			'box.descriptionCardNode.textContent = box.prompt;',
+		);
+	});
+
+	it('preserves mode transitions and bounds preview image layout', () => {
+		expect(galleryHtml).toContain('const modeTransitionIndexes = new Set();');
+		expect(galleryHtml).toContain('modeTransitionIndexes.add(index);');
+		expect(galleryHtml).toContain('gridTransitionFocusIndex = focused;');
+		expect(galleryHtml).toContain(
+			'const renderedImageHeight = Math.max(1, item.sizeX.pos / item.ar);',
+		);
+		expect(galleryHtml).toContain("object-fit: contain;");
+	});
+
+	it('loads visible and focused images ahead of metadata and prefetch work', () => {
+		expect(galleryHtml).toContain(
+			"thumbnailUrl: assetImageUrl(asset, 'thumbnail')",
+		);
+		expect(galleryHtml).toContain(
+			"previewUrl: assetImageUrl(asset, 'preview')",
+		);
+		expect(galleryHtml).toContain('const concurrency = 8;');
+		expect(galleryHtml).toContain('const prefetchConcurrency = 2;');
+		expect(galleryHtml).toContain(
+			"gallery.hydrateBox(index, isPrefetch ? 'low' : 'high', controller.signal)",
+		);
+		expect(galleryHtml).toContain("thumbnail.fetchPriority = fetchPriority;");
+		expect(galleryHtml).toContain('task.controller.abort();');
+		expect(galleryHtml).toContain('if (img.dataset.src !== item.previewUrl) {');
+		expect(galleryHtml).not.toContain(
+			'if (!stillAnimating && img.dataset.src !== item.previewUrl) {',
+		);
+	});
 });
 
 describe('gallery routes', () => {

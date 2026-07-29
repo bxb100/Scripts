@@ -35,12 +35,12 @@
       display: block;
       width: 100%;
       height: auto;
+      object-fit: contain;
+      object-position: center top;
       user-select: none;
     }
     .box.skeleton {
       background-image: none;
-      cursor: default;
-      pointer-events: none;
     }
     .box.skeleton::before {
       content: "";
@@ -314,33 +314,33 @@
 
     function fallbackAssetDimensions(asset) {
       const ratio = Number.isFinite(asset.ratio) && asset.ratio > 0 ? asset.ratio : 1;
+      const height = 4096;
       return {
-        width: Math.max(1, Math.round(ratio * 1000)),
-        height: 1000,
+        width: Math.max(1, Math.round(ratio * height)),
+        height,
       };
     }
 
-    function createSkeletonItem(asset) {
+    function createSkeletonItem(asset, index) {
       const { width, height } = fallbackAssetDimensions(asset);
       return {
         id: asset.id,
         w: width,
         h: height,
-        prompt: '',
-        thumbnailUrl: '',
-        previewUrl: '',
+        prompt: 'Photo ' + (index + 1),
+        thumbnailUrl: assetImageUrl(asset, 'thumbnail'),
+        previewUrl: assetImageUrl(asset, 'preview'),
         skeleton: true,
       };
     }
 
-    async function loadGalleryItem(asset, index, showMetadata) {
-      let detail = null;
-      if (showMetadata) {
-        try {
-          detail = await fetchJson('/api/assets/' + encodeURIComponent(asset.id));
-        } catch (error) {
-          console.warn('Unable to load asset metadata', asset.id, error);
-        }
+    async function loadGalleryMetadata(asset, index) {
+      let detail;
+      try {
+        detail = await fetchJson('/api/assets/' + encodeURIComponent(asset.id));
+      } catch (error) {
+        console.warn('Unable to load asset metadata', asset.id, error);
+        return null;
       }
 
       const fallbackDimensions = fallbackAssetDimensions(asset);
@@ -355,13 +355,9 @@
       const prompt = description || fallbackName || 'Photo ' + (index + 1);
 
       return {
-        id: asset.id,
         w: width,
         h: height,
         prompt,
-        thumbnailUrl: assetImageUrl(asset, 'thumbnail'),
-        previewUrl: assetImageUrl(asset, 'preview'),
-        skeleton: false,
       };
     }
 
@@ -394,30 +390,30 @@
           return asset.isImage && !asset.isTrashed && (!asset.status || asset.status === 'active');
         });
 
-      const initialItemLimit = 30;
-      const initialAssets = timelineAssets.slice(0, initialItemLimit);
-      const remainingAssets = timelineAssets.slice(initialItemLimit);
-      const initialItems = await mapWithConcurrency(initialAssets, 6, function loadInitialAsset(asset, index) {
-        return loadGalleryItem(asset, index, showMetadata);
-      });
-
       return {
-        items: initialItems.concat(remainingAssets.map(createSkeletonItem)),
-        remainingAssets,
-        remainingOffset: initialAssets.length,
+        items: timelineAssets.map(createSkeletonItem),
+        assets: timelineAssets,
         showMetadata,
       };
     }
 
-    function startGallery(photoGalleryData) {
+    function startGallery(photoGalleryData, requestHydrationWindow) {
       let scheduledRender = false;
+      let pendingScrollFrames = 0;
       function scheduleRender() {
         if (scheduledRender) return;
         scheduledRender = true;
         requestAnimationFrame(function renderAndMaybeScheduleAnotherRender(now) {
           scheduledRender = false;
-          if (render(now)) scheduleRender();
+          const stillAnimating = render(now);
+          if (pendingScrollFrames > 0) pendingScrollFrames -= 1;
+          if (stillAnimating || pendingScrollFrames > 0) scheduleRender();
         });
+      }
+
+      function scheduleScrollRender() {
+        pendingScrollFrames = 2;
+        scheduleRender();
       }
 
       const msPerAnimationStep = 4;
@@ -489,6 +485,14 @@
       let scrollY = isSafari ? document.body.scrollTop : window.scrollY;
       const pointer = { x: -Infinity, y: -Infinity };
       const events = { keydown: null, click: null, mousemove: null };
+      const previewLru = [];
+      const previewCacheLimit = 3;
+      const mountedIndexes = new Set();
+      let layoutVersion = 0;
+      let gridLayoutCache = null;
+      let focusedLayoutCache = null;
+      let hoveredIndex = null;
+      let hasRendered = false;
 
       const data = (function createBoxData() {
         const windowSizeY = document.documentElement.clientHeight;
@@ -499,30 +503,11 @@
           const ar = item.w / item.h;
           const sizeX = Math.min(item.w, dimensions.boxMaxSizeX, imgMaxSizeY * ar);
           const sizeY = sizeX / ar + promptSizeY;
-          const node = document.createElement('div');
-          const img = document.createElement('img');
-          const promptNode = document.createElement('figcaption');
-          const descriptionCardNode = document.createElement('div');
-
-          node.className = item.skeleton ? 'box skeleton' : 'box';
-          if (!item.skeleton) {
-            node.style.backgroundImage = 'url("' + item.thumbnailUrl.replace(/"/g, '%22') + '")';
-          }
-          if (item.skeleton) node.setAttribute('aria-hidden', 'true');
-          img.alt = item.prompt;
-          img.draggable = false;
-          promptNode.className = 'prompt';
-          promptNode.textContent = item.prompt;
-          descriptionCardNode.className = 'description-card';
-          descriptionCardNode.textContent = item.prompt;
-          descriptionCardNode.setAttribute('aria-hidden', 'true');
-          descriptionCardNode.addEventListener('click', function stopDescriptionClick(event) {
-            event.stopPropagation();
-          });
-          node.append(img, promptNode, descriptionCardNode);
 
           return {
             id: item.id,
+            prompt: item.prompt,
+            thumbnailUrl: item.thumbnailUrl,
             previewUrl: item.previewUrl,
             naturalSizeX: item.w,
             ar,
@@ -533,23 +518,116 @@
             y: spring(windowSizeY + Math.floor(index / dimensions.cols) * imgMaxSizeY),
             scale: spring(1),
             fxFactor: spring(20),
-            node,
-            img,
-            promptNode,
-            descriptionCardNode,
+            node: null,
+            img: null,
+            promptNode: null,
+            descriptionCardNode: null,
           };
         });
       })();
+      const indexById = new Map(data.map(function mapItemId(item, index) {
+        return [item.id, index];
+      }));
+      const activeSpringIndexes = new Set();
+      const modeTransitionIndexes = new Set();
+      let gridTransitionFocusIndex = null;
 
-      function springForEach(callback) {
-        for (const item of data) {
-          callback(item.sizeX);
-          callback(item.sizeY);
-          callback(item.x);
-          callback(item.y);
-          callback(item.scale);
-          callback(item.fxFactor);
+      function ensureBoxElements(item, index) {
+        if (item.node != null) return;
+
+        const node = document.createElement('div');
+        const img = document.createElement('img');
+        const promptNode = document.createElement('figcaption');
+        const descriptionCardNode = document.createElement('div');
+
+        node.className = item.skeleton ? 'box skeleton' : 'box';
+        if (!item.skeleton && item.thumbnailUrl) {
+          node.style.backgroundImage = 'url("' + item.thumbnailUrl.replace(/"/g, '%22') + '")';
         }
+        if (item.skeleton) node.setAttribute('aria-hidden', 'true');
+        img.alt = item.skeleton ? '' : item.prompt;
+        img.decoding = 'async';
+        img.draggable = false;
+        img.fetchPriority = 'high';
+        promptNode.className = 'prompt';
+        promptNode.textContent = item.skeleton ? '' : item.prompt;
+        descriptionCardNode.className = 'description-card';
+        descriptionCardNode.textContent = item.skeleton ? '' : item.prompt;
+        descriptionCardNode.setAttribute('aria-hidden', 'true');
+        descriptionCardNode.addEventListener('click', function stopDescriptionClick(event) {
+          event.stopPropagation();
+        });
+        node.append(img, promptNode, descriptionCardNode);
+
+        item.node = node;
+        item.img = img;
+        item.promptNode = promptNode;
+        item.descriptionCardNode = descriptionCardNode;
+        mountedIndexes.add(index);
+      }
+
+      function clearPreview(item) {
+        if (item.img == null) return;
+        item.img.onload = null;
+        item.img.onerror = null;
+        item.img.removeAttribute('src');
+        delete item.img.dataset.src;
+        delete item.img.dataset.loadedSrc;
+        item.img.style.display = 'none';
+      }
+
+      function forgetPreview(index) {
+        const lruIndex = previewLru.indexOf(index);
+        if (lruIndex !== -1) previewLru.splice(lruIndex, 1);
+        clearPreview(data[index]);
+      }
+
+      function rememberPreview(index) {
+        const lruIndex = previewLru.indexOf(index);
+        if (lruIndex !== -1) previewLru.splice(lruIndex, 1);
+        previewLru.push(index);
+        while (previewLru.length > previewCacheLimit) {
+          forgetPreview(previewLru[0]);
+        }
+      }
+
+      function releaseBoxElements(item, index) {
+        if (item.node == null) return;
+        forgetPreview(index);
+        item.node.remove();
+        item.node.style.backgroundImage = 'none';
+        item.node = null;
+        item.img = null;
+        item.promptNode = null;
+        item.descriptionCardNode = null;
+        mountedIndexes.delete(index);
+      }
+
+      function itemSpringForEach(item, callback) {
+        callback(item.sizeX);
+        callback(item.sizeY);
+        callback(item.x);
+        callback(item.y);
+        callback(item.scale);
+        callback(item.fxFactor);
+      }
+
+      function setItemDestinations(index, destinations, animate) {
+        const item = data[index];
+        let changed = false;
+        for (const [name, value] of Object.entries(destinations)) {
+          if (item[name].dest === value) continue;
+          item[name].dest = value;
+          changed = true;
+        }
+        if (!animate) {
+          itemSpringForEach(item, springGoToEnd);
+          activeSpringIndexes.delete(index);
+          modeTransitionIndexes.delete(index);
+          return changed;
+        }
+        if (changed) activeSpringIndexes.add(index);
+        return changed;
       }
 
       function stepSpring(config, steps) {
@@ -563,19 +641,27 @@
 
       function stepSprings(steps) {
         let stillAnimating = false;
-        for (const item of data) {
-          if (stepSpring(item.sizeX, steps)) stillAnimating = true;
-          if (stepSpring(item.sizeY, steps)) stillAnimating = true;
-          if (stepSpring(item.x, steps)) stillAnimating = true;
-          if (stepSpring(item.y, steps)) stillAnimating = true;
-          if (stepSpring(item.scale, steps)) stillAnimating = true;
-          if (stepSpring(item.fxFactor, steps)) stillAnimating = true;
+        for (const index of activeSpringIndexes) {
+          const item = data[index];
+          let itemAnimating = false;
+          if (stepSpring(item.sizeX, steps)) itemAnimating = true;
+          if (stepSpring(item.sizeY, steps)) itemAnimating = true;
+          if (stepSpring(item.x, steps)) itemAnimating = true;
+          if (stepSpring(item.y, steps)) itemAnimating = true;
+          if (stepSpring(item.scale, steps)) itemAnimating = true;
+          if (stepSpring(item.fxFactor, steps)) itemAnimating = true;
+          if (itemAnimating) stillAnimating = true;
+          else {
+            activeSpringIndexes.delete(index);
+            modeTransitionIndexes.delete(index);
+          }
         }
         return stillAnimating;
       }
 
       window.addEventListener('resize', scheduleRender);
-      window.addEventListener('scroll', scheduleRender, true);
+      window.addEventListener('scroll', scheduleScrollRender, { capture: true, passive: true });
+      window.addEventListener('scrollend', scheduleRender, true);
       window.addEventListener('popstate', scheduleRender);
       window.addEventListener('keydown', function onKeyDown(event) {
         if (
@@ -600,30 +686,213 @@
       dummyPlaceholder.style.width = '1px';
       document.body.append(dummyPlaceholder);
 
-      function hitTest2DMode(items, pointerX, pointerY) {
-        for (let index = 0; index < items.length; index += 1) {
-          const item = items[index];
-          if (item.skeleton) continue;
+      function getGridLayout(viewportWidth) {
+        if (
+          gridLayoutCache != null &&
+          gridLayoutCache.viewportWidth === viewportWidth &&
+          gridLayoutCache.version === layoutVersion
+        ) return gridLayoutCache;
+
+        const dimensions = colsBoxMaxSizeXF(viewportWidth);
+        const { cols, boxMaxSizeX } = dimensions;
+        const sizeX = new Array(data.length);
+        const sizeY = new Array(data.length);
+        const x = new Array(data.length);
+        const y = new Array(data.length);
+        const rowsTop = [windowPaddingTop];
+        let rowMaxSizeY = 0;
+
+        for (let index = 0; index < data.length; index += 1) {
+          const item = data[index];
+          const imgMaxSizeY = item.ar === 1
+            ? boxMaxSizeX * 0.85
+            : item.ar < 1
+              ? boxMaxSizeX * 1.05
+              : boxMaxSizeX;
+          sizeX[index] = Math.min(item.naturalSizeX, boxMaxSizeX, imgMaxSizeY * item.ar);
+          sizeY[index] = sizeX[index] / item.ar + promptSizeY;
+          rowMaxSizeY = Math.max(rowMaxSizeY, sizeY[index]);
+          if (index % cols === cols - 1 || index === data.length - 1) {
+            rowsTop.push(rowsTop[rowsTop.length - 1] + rowMaxSizeY + boxesGapY);
+            rowMaxSizeY = 0;
+          }
+        }
+
+        for (let index = 0; index < data.length; index += 1) {
+          const currentRow = Math.floor(index / cols);
+          const currentRowMaxSizeY = rowsTop[currentRow + 1] - boxesGapY - rowsTop[currentRow];
+          x[index] =
+            boxesGapX +
+            (boxMaxSizeX + boxesGapX) * (index % cols) +
+            (boxMaxSizeX - sizeX[index]) / 2;
+          y[index] = rowsTop[currentRow] + (currentRowMaxSizeY - sizeY[index]) / 2;
+        }
+
+        gridLayoutCache = {
+          viewportWidth,
+          version: layoutVersion,
+          cols,
+          sizeX,
+          sizeY,
+          x,
+          y,
+          rowsTop,
+        };
+        return gridLayoutCache;
+      }
+
+      function rowIndexAtY(layout, targetY) {
+        const rowCount = layout.rowsTop.length - 1;
+        let low = 0;
+        let high = Math.max(0, rowCount - 1);
+        while (low < high) {
+          const middle = Math.floor((low + high + 1) / 2);
+          if (layout.rowsTop[middle] <= targetY) low = middle;
+          else high = middle - 1;
+        }
+        return low;
+      }
+
+      function indexRangeForRows(layout, firstRow, lastRow) {
+        return {
+          start: firstRow * layout.cols,
+          end: Math.min(data.length - 1, (lastRow + 1) * layout.cols - 1),
+        };
+      }
+
+      function getGridWindow(layout, viewportTop, viewportHeight) {
+        const visibleRows = {
+          first: rowIndexAtY(layout, Math.max(0, viewportTop)),
+          last: rowIndexAtY(layout, viewportTop + viewportHeight),
+        };
+        const domOverscan = Math.min(400, viewportHeight * 0.5);
+        const domRows = {
+          first: rowIndexAtY(layout, Math.max(0, viewportTop - domOverscan)),
+          last: rowIndexAtY(layout, viewportTop + viewportHeight + domOverscan),
+        };
+        const hydrationOverscan = viewportHeight * 2;
+        const hydrationRows = {
+          first: rowIndexAtY(layout, Math.max(0, viewportTop - hydrationOverscan)),
+          last: rowIndexAtY(layout, viewportTop + viewportHeight + hydrationOverscan),
+        };
+
+        return {
+          visible: indexRangeForRows(layout, visibleRows.first, visibleRows.last),
+          dom: indexRangeForRows(layout, domRows.first, domRows.last),
+          hydration: indexRangeForRows(layout, hydrationRows.first, hydrationRows.last),
+        };
+      }
+
+      function requestGridHydration(gridWindow) {
+        requestHydrationWindow(
+          gridWindow.hydration.start,
+          gridWindow.hydration.end,
+          gridWindow.visible.start,
+          gridWindow.visible.end,
+        );
+      }
+
+      function getFocusedLayout(focused, viewportWidth, viewportHeight, isMobileLayout) {
+        if (
+          focusedLayoutCache != null &&
+          focusedLayoutCache.focused === focused &&
+          focusedLayoutCache.viewportWidth === viewportWidth &&
+          focusedLayoutCache.viewportHeight === viewportHeight &&
+          focusedLayoutCache.isMobileLayout === isMobileLayout &&
+          focusedLayoutCache.version === layoutVersion
+        ) return focusedLayoutCache;
+
+        const focusedPaddingTop = isMobileLayout ? 16 : windowPaddingTop;
+        const focusedGapY = isMobileLayout ? 16 : boxes1DGapY;
+        const focusedInsetX = isMobileLayout ? 12 : boxes1DGapX + hitArea1DSizeX;
+        const img1DSizeY = Math.max(1, viewportHeight - focusedPaddingTop - prompt1DSizeY - focusedGapY);
+        const box1DMaxSizeX = Math.max(1, viewportWidth - focusedInsetX * 2);
+        const sizeX = new Array(data.length);
+        const sizeY = new Array(data.length);
+        const x = new Array(data.length);
+        const y = new Array(data.length);
+        const collapsedOffsets = new Array(data.length + 1);
+        collapsedOffsets[0] = 0;
+
+        for (let index = 0; index < data.length; index += 1) {
+          const item = data[index];
+          const fullSizeX = Math.min(item.naturalSizeX, box1DMaxSizeX, img1DSizeY * item.ar);
+          sizeX[index] = index === focused ? fullSizeX : fullSizeX * 0.7;
+          sizeY[index] = sizeX[index] / item.ar + prompt1DSizeY;
+          y[index] = Math.max(focusedPaddingTop, (viewportHeight - sizeY[index]) / 2);
+          collapsedOffsets[index + 1] = collapsedOffsets[index] + fullSizeX * 0.7 + boxes1DGapX;
+        }
+
+        const leftStart = focusedInsetX - collapsedOffsets[focused];
+        for (let index = 0; index < focused; index += 1) {
+          x[index] = leftStart + collapsedOffsets[index];
+        }
+        x[focused] = (viewportWidth - sizeX[focused]) / 2;
+        const rightStart = isMobileLayout
+          ? viewportWidth + boxes1DGapX
+          : viewportWidth - hitArea1DSizeX;
+        for (let index = focused + 1; index < data.length; index += 1) {
+          x[index] = rightStart + collapsedOffsets[index] - collapsedOffsets[focused + 1];
+        }
+
+        focusedLayoutCache = {
+          focused,
+          viewportWidth,
+          viewportHeight,
+          isMobileLayout,
+          version: layoutVersion,
+          sizeX,
+          sizeY,
+          x,
+          y,
+        };
+        return focusedLayoutCache;
+      }
+
+      function addIndexRange(indexes, start, end) {
+        for (let index = start; index <= end; index += 1) indexes.add(index);
+      }
+
+      function addFocusedWindow(indexes, layout, viewportWidth) {
+        const overscan = 150;
+        indexes.add(layout.focused);
+        for (let index = layout.focused - 1; index >= 0; index -= 1) {
+          if (layout.x[index] + layout.sizeX[index] < -overscan) break;
+          indexes.add(index);
+        }
+        for (let index = layout.focused + 1; index < data.length; index += 1) {
+          if (layout.x[index] > viewportWidth + overscan) break;
+          indexes.add(index);
+        }
+      }
+
+      function hitTest2DMode(layout, pointerX, pointerY) {
+        const row = rowIndexAtY(layout, pointerY);
+        const firstIndex = row * layout.cols;
+        const lastIndex = Math.min(data.length, firstIndex + layout.cols);
+        for (let index = firstIndex; index < lastIndex; index += 1) {
           if (
-            item.x.dest <= pointerX &&
-            pointerX < item.x.dest + item.sizeX.dest &&
-            item.y.dest <= pointerY &&
-            pointerY < item.y.dest + item.sizeY.dest
+            layout.x[index] <= pointerX &&
+            pointerX < layout.x[index] + layout.sizeX[index] &&
+            layout.y[index] <= pointerY &&
+            pointerY < layout.y[index] + layout.sizeY[index]
           ) return index;
         }
         return null;
       }
 
-      function adjacentReadyIndex(items, focused, direction) {
-        for (let index = focused + direction; index >= 0 && index < items.length; index += direction) {
-          if (!items[index].skeleton) return index;
-        }
-        return focused;
+      function adjacentIndex(items, focused, direction) {
+        const index = focused + direction;
+        return index >= 0 && index < items.length ? index : focused;
+      }
+
+      function firstIndex(items) {
+        return items.length > 0 ? 0 : null;
       }
 
       function hitTest1DMode(items, focused, viewportWidth, pointerX) {
-        const previous = adjacentReadyIndex(items, focused, -1);
-        const next = adjacentReadyIndex(items, focused, 1);
+        const previous = adjacentIndex(items, focused, -1);
+        const next = adjacentIndex(items, focused, 1);
         if (previous !== focused && pointerX >= 0 && pointerX <= hitArea1DSizeX) return previous;
         if (next !== focused && pointerX >= viewportWidth - hitArea1DSizeX) return next;
         return null;
@@ -656,11 +925,11 @@
         const isMobileLayout = coarsePointer.matches;
         const currentScrollY = isSafari ? document.body.scrollTop : window.scrollY;
         const currentScrollX = isSafari ? document.body.scrollLeft : window.scrollX;
+        const gridLayout = getGridLayout(newWindowSizeX);
         const hashImageId = decodeHash(window.location.hash.slice(1));
-        let focused = null;
-        for (let index = 0; index < data.length; index += 1) {
-          if (!data[index].skeleton && data[index].id === hashImageId) focused = index;
-        }
+        const hashIndex = indexById.get(hashImageId);
+        const focused = hashIndex ?? null;
+        if (focused != null) ensureBoxElements(data[focused], focused);
         if (expandedPromptId != null && (focused == null || data[focused].id !== expandedPromptId)) {
           expandedPromptId = null;
         }
@@ -676,11 +945,11 @@
         let newFocused = inputCode === 'Escape'
           ? null
           : (inputCode === 'ArrowLeft' || inputCode === 'ArrowRight') && focused == null
-            ? 0
+            ? firstIndex(data)
             : inputCode === 'ArrowLeft'
-              ? adjacentReadyIndex(data, focused, -1)
+              ? adjacentIndex(data, focused, -1)
               : inputCode === 'ArrowRight'
-                ? adjacentReadyIndex(data, focused, 1)
+                ? adjacentIndex(data, focused, 1)
                 : focused;
 
         const descriptionOverlayTriggerNode = focused == null ? null : data[focused].promptNode;
@@ -719,7 +988,7 @@
               selection.addRange(range);
             }
           } else if (focused == null) {
-            newFocused = hitTest2DMode(data, pointerXLocal, pointerYLocal) ?? newFocused;
+            newFocused = hitTest2DMode(gridLayout, pointerXLocal, pointerYLocal) ?? newFocused;
           } else {
             newFocused = isMobileLayout
               ? null
@@ -728,113 +997,140 @@
         }
         if (newFocused !== focused) expandedPromptId = null;
 
-        const dimensions = colsBoxMaxSizeXF(newWindowSizeX);
-        const cols = dimensions.cols;
-        const boxMaxSizeX = dimensions.boxMaxSizeX;
-        const boxes2DSizeX = [];
-        const boxes2DSizeY = [];
-        const rowsTop = [windowPaddingTop];
-        let rowMaxSizeY = 0;
-
-        for (let index = 0; index < data.length; index += 1) {
-          const item = data[index];
-          const imgMaxSizeY = item.ar === 1
-            ? boxMaxSizeX * 0.85
-            : item.ar < 1
-              ? boxMaxSizeX * 1.05
-              : boxMaxSizeX;
-          const sizeX = Math.min(item.naturalSizeX, boxMaxSizeX, imgMaxSizeY * item.ar);
-          const sizeY = sizeX / item.ar + promptSizeY;
-          boxes2DSizeX.push(sizeX);
-          boxes2DSizeY.push(sizeY);
-          rowMaxSizeY = Math.max(rowMaxSizeY, sizeY);
-          if (index % cols === cols - 1 || index === data.length - 1) {
-            rowsTop.push(rowsTop[rowsTop.length - 1] + rowMaxSizeY + boxesGapY);
-            rowMaxSizeY = 0;
-          }
-        }
+        const cols = gridLayout.cols;
+        const boxes2DSizeX = gridLayout.sizeX;
+        const boxes2DSizeY = gridLayout.sizeY;
+        const rowsTop = gridLayout.rowsTop;
 
         let cursor = 'auto';
         let newAnchor = anchor;
         let adjustedScrollTop = currentScrollY;
+        const renderIndexes = new Set();
         const hoverMagnetFactor = 40;
 
         if (newFocused == null) {
+          const isLeavingFocusedMode = focused != null;
           if (focused != null) {
+            gridTransitionFocusIndex = focused;
             const focusedTop = rowsTop[Math.floor(focused / cols)];
             if (focusedTop <= currentScrollY || focusedTop + boxes2DSizeY[focused] >= currentScrollY + windowSizeY) {
               adjustedScrollTop = focusedTop - boxesGapY - gapTopPeek;
             }
           }
 
-          for (let index = 0; index < data.length; index += 1) {
-            const item = data[index];
-            const sizeX = boxes2DSizeX[index];
-            const sizeY = boxes2DSizeY[index];
-            const currentRow = Math.floor(index / cols);
-            const currentRowMaxSizeY = rowsTop[currentRow + 1] - boxesGapY - rowsTop[currentRow];
-            item.sizeX.dest = sizeX;
-            item.sizeY.dest = sizeY;
-            item.x.dest = boxesGapX + (boxMaxSizeX + boxesGapX) * (index % cols) + (boxMaxSizeX - sizeX) / 2;
-            item.y.dest = rowsTop[currentRow] + (currentRowMaxSizeY - sizeY) / 2;
-            item.scale.dest = 1;
-            item.fxFactor.dest = 1;
-          }
-
-          const hit = hitTest2DMode(data, pointerXLocal, pointerYLocal);
-          if (hit != null) {
-            cursor = 'zoom-in';
-            const item = data[hit];
-            item.x.dest += (pointerXLocal - (item.x.dest + item.sizeX.dest / 2)) / hoverMagnetFactor;
-            item.y.dest += (pointerYLocal - (item.y.dest + item.sizeY.dest / 2)) / hoverMagnetFactor;
-            item.scale.dest = 1.02;
-          }
-
-          const anchorY = data[anchor].y.dest - gapTopPeek;
+          const anchorY = gridLayout.y[anchor] - gapTopPeek;
           if (newWindowSizeX !== windowSizeX) adjustedScrollTop = Math.max(0, anchorY);
           if (adjustedScrollTop !== scrollY && Math.abs(anchorY - adjustedScrollTop) > windowSizeY / 10) {
-            for (newAnchor = 0; newAnchor < data.length; newAnchor += cols) {
-              const item = data[newAnchor];
-              if (item.y.dest + item.sizeY.dest - adjustedScrollTop > windowSizeY / 5) break;
+            const anchorRow = rowIndexAtY(gridLayout, adjustedScrollTop + windowSizeY / 5);
+            newAnchor = Math.min(anchorRow * cols, data.length - 1);
+          }
+
+          const gridWindow = getGridWindow(gridLayout, adjustedScrollTop, windowSizeY);
+          addIndexRange(renderIndexes, gridWindow.dom.start, gridWindow.dom.end);
+          for (const index of mountedIndexes) renderIndexes.add(index);
+          for (const index of activeSpringIndexes) renderIndexes.add(index);
+          if (hoveredIndex != null) renderIndexes.add(hoveredIndex);
+
+          const hit = hitTest2DMode(gridLayout, pointerXLocal, pointerYLocal);
+          if (hit != null) renderIndexes.add(hit);
+
+          for (const index of renderIndexes) {
+            const isInDomWindow = index >= gridWindow.dom.start && index <= gridWindow.dom.end;
+            const continuesModeTransition = modeTransitionIndexes.has(index);
+            const continuesMountedAnimation =
+              mountedIndexes.has(index) && activeSpringIndexes.has(index);
+            const isHoverTransition = index === hit || index === hoveredIndex;
+            const animate =
+              !animationDisabled &&
+              (
+                continuesModeTransition ||
+                continuesMountedAnimation ||
+                (isLeavingFocusedMode && isInDomWindow) ||
+                (!hasRendered && isInDomWindow) ||
+                isHoverTransition
+              );
+            const changed = setItemDestinations(index, {
+              sizeX: boxes2DSizeX[index],
+              sizeY: boxes2DSizeY[index],
+              x: gridLayout.x[index],
+              y: gridLayout.y[index],
+              scale: 1,
+              fxFactor: 1,
+            }, animate);
+            if (animate && changed && isLeavingFocusedMode && isInDomWindow) {
+              modeTransitionIndexes.add(index);
             }
-            newAnchor = Math.min(newAnchor, data.length - 1);
           }
+
+          if (hit != null) {
+            cursor = 'zoom-in';
+            setItemDestinations(hit, {
+              x:
+                gridLayout.x[hit] +
+                (pointerXLocal - (gridLayout.x[hit] + gridLayout.sizeX[hit] / 2)) / hoverMagnetFactor,
+              y:
+                gridLayout.y[hit] +
+                (pointerYLocal - (gridLayout.y[hit] + gridLayout.sizeY[hit] / 2)) / hoverMagnetFactor,
+              scale: 1.02,
+            }, true);
+          }
+          hoveredIndex = hit;
+          requestGridHydration(gridWindow);
         } else {
-          const focusedPaddingTop = isMobileLayout ? 16 : windowPaddingTop;
-          const focusedGapY = isMobileLayout ? 16 : boxes1DGapY;
-          const focusedInsetX = isMobileLayout ? 12 : boxes1DGapX + hitArea1DSizeX;
-          const img1DSizeY = Math.max(1, windowSizeY - focusedPaddingTop - prompt1DSizeY - focusedGapY);
-          const box1DMaxSizeX = Math.max(1, newWindowSizeX - focusedInsetX * 2);
-          let currentLeft = isMobileLayout ? 0 : focusedInsetX;
+          hoveredIndex = null;
+          const hydrationStart = Math.max(0, newFocused - 6);
+          const hydrationEnd = Math.min(data.length - 1, newFocused + 6);
+          requestHydrationWindow(
+            hydrationStart,
+            hydrationEnd,
+            Math.max(0, newFocused - 1),
+            Math.min(data.length - 1, newFocused + 1),
+            newFocused,
+          );
 
-          for (let index = newFocused - 1; index >= 0; index -= 1) {
-            const item = data[index];
-            const imgSizeX = Math.min(item.naturalSizeX, box1DMaxSizeX, img1DSizeY * item.ar) * 0.7;
-            currentLeft -= imgSizeX + boxes1DGapX;
-          }
+          const focusedLayout = getFocusedLayout(
+            newFocused,
+            newWindowSizeX,
+            windowSizeY,
+            isMobileLayout,
+          );
+          addFocusedWindow(renderIndexes, focusedLayout, newWindowSizeX);
+          for (const index of mountedIndexes) renderIndexes.add(index);
+          for (const index of activeSpringIndexes) renderIndexes.add(index);
 
-          const edgeRubberBandVelocityX = inputCode === 'ArrowLeft' && adjacentReadyIndex(data, focused, -1) === focused
+          const edgeRubberBandVelocityX =
+            focused != null &&
+            inputCode === 'ArrowLeft' &&
+            adjacentIndex(data, focused, -1) === focused
             ? 2000
-            : inputCode === 'ArrowRight' && adjacentReadyIndex(data, focused, 1) === focused
+            : focused != null &&
+                inputCode === 'ArrowRight' &&
+                adjacentIndex(data, focused, 1) === focused
               ? -2000
               : 0;
 
-          for (let index = 0; index < data.length; index += 1) {
+          for (const index of renderIndexes) {
             const item = data[index];
-            const imgSizeX = Math.min(item.naturalSizeX, box1DMaxSizeX, img1DSizeY * item.ar) * (index === newFocused ? 1 : 0.7);
-            const boxSizeY = imgSizeX / item.ar + prompt1DSizeY;
-            item.sizeX.dest = imgSizeX;
-            item.sizeY.dest = boxSizeY;
-            item.y.dest = Math.max(focusedPaddingTop, (windowSizeY - boxSizeY) / 2) + adjustedScrollTop;
-            item.x.dest = index === newFocused ? (newWindowSizeX - imgSizeX) / 2 : currentLeft;
-            item.x.v += edgeRubberBandVelocityX / (index === newFocused ? 1 : 4);
-            item.scale.dest = 1;
-            item.fxFactor.dest = index === newFocused ? 1 : 0.2;
-            currentLeft = index === newFocused
-              ? isMobileLayout
-                ? newWindowSizeX + boxes1DGapX
-                : newWindowSizeX - hitArea1DSizeX
-              : currentLeft + imgSizeX + boxes1DGapX;
+            const animate =
+              !animationDisabled &&
+              (
+                mountedIndexes.has(index) ||
+                activeSpringIndexes.has(index) ||
+                Math.abs(index - newFocused) <= 2 ||
+                index === focused
+              );
+            setItemDestinations(index, {
+              sizeX: focusedLayout.sizeX[index],
+              sizeY: focusedLayout.sizeY[index],
+              y: focusedLayout.y[index] + adjustedScrollTop,
+              x: focusedLayout.x[index],
+              scale: 1,
+              fxFactor: index === newFocused ? 1 : 0.2,
+            }, animate);
+            if (edgeRubberBandVelocityX !== 0 && animate) {
+              item.x.v += edgeRubberBandVelocityX / (index === newFocused ? 1 : 4);
+              activeSpringIndexes.add(index);
+            }
           }
 
           const hit = isMobileLayout
@@ -844,30 +1140,46 @@
             cursor = 'zoom-out';
           } else {
             cursor = 'zoom-in';
-            const item = data[hit];
-            item.x.dest += (pointerXLocal - (item.x.dest + item.sizeX.dest / 2)) / hoverMagnetFactor;
-            item.y.dest += (pointerYLocal - (item.y.dest + item.sizeY.dest / 2)) / hoverMagnetFactor;
-            item.scale.dest = 1.02;
-            item.fxFactor.dest = 0.5;
+            setItemDestinations(hit, {
+              x:
+                focusedLayout.x[hit] +
+                (pointerXLocal - (focusedLayout.x[hit] + focusedLayout.sizeX[hit] / 2)) / hoverMagnetFactor,
+              y:
+                focusedLayout.y[hit] +
+                adjustedScrollTop +
+                (
+                  pointerYLocal -
+                  (focusedLayout.y[hit] + adjustedScrollTop + focusedLayout.sizeY[hit] / 2)
+                ) /
+                  hoverMagnetFactor,
+              scale: 1.02,
+              fxFactor: 0.5,
+            }, true);
           }
         }
 
-        for (const item of data) item.y.pos += adjustedScrollTop - currentScrollY;
+        if (adjustedScrollTop !== currentScrollY) {
+          for (const index of renderIndexes) {
+            data[index].y.pos += adjustedScrollTop - currentScrollY;
+          }
+        }
 
         const elapsed = clamp(0, now - (animatedUntilTime ?? now), maxAnimationCatchUpMs);
         const steps = Math.floor(elapsed / msPerAnimationStep);
         const newAnimatedUntilTime = now - (elapsed % msPerAnimationStep);
         const stillAnimating = animationDisabled ? false : stepSprings(steps);
-        if (animationDisabled) springForEach(springGoToEnd);
+        if (animationDisabled) {
+          activeSpringIndexes.clear();
+          modeTransitionIndexes.clear();
+        }
+        if (newFocused == null && focused == null && modeTransitionIndexes.size === 0) {
+          gridTransitionFocusIndex = null;
+        }
 
         const browserUIMaxSizeTop = 100;
         const browserUIMaxSizeBottom = 150;
-        for (let index = 0; index < data.length; index += 1) {
+        for (const index of renderIndexes) {
           const item = data[index];
-          const node = item.node;
-          const img = item.img;
-          const promptNode = item.promptNode;
-          const descriptionCardNode = item.descriptionCardNode;
           const visible =
             item.y.pos - adjustedScrollTop <= windowSizeY + browserUIMaxSizeBottom &&
             item.y.pos + item.sizeY.pos - adjustedScrollTop >= -browserUIMaxSizeTop &&
@@ -875,13 +1187,20 @@
             item.x.pos + item.sizeX.pos >= 0;
 
           if (visible) {
+            ensureBoxElements(item, index);
+            const node = item.node;
+            const img = item.img;
+            const promptNode = item.promptNode;
+            const descriptionCardNode = item.descriptionCardNode;
             node.style.width = item.sizeX.pos + 'px';
             node.style.height = item.sizeY.pos + 'px';
             node.style.transform = 'translate3d(' + item.x.pos + 'px,' + item.y.pos + 'px,0) scale(' + item.scale.pos + ')';
             node.style.filter = newFocused != null && (index === newFocused - 1 || index === newFocused || index === newFocused + 1)
               ? 'brightness(' + item.fxFactor.pos * 100 + '%) blur(' + Math.max(0, 6 - item.fxFactor.pos * 6) + 'px)'
               : 'brightness(' + item.fxFactor.pos * 100 + '%)';
-            promptNode.style.top = item.sizeX.pos / item.ar + 'px';
+            const renderedImageHeight = Math.max(1, item.sizeX.pos / item.ar);
+            img.style.height = renderedImageHeight + 'px';
+            promptNode.style.top = renderedImageHeight + 'px';
 
             if (index === newFocused) {
               const descriptionOverlayCanOpen =
@@ -922,21 +1241,31 @@
                 descriptionCardNode.removeAttribute('role');
                 descriptionCardNode.removeAttribute('aria-label');
               }
-              img.style.display = img.dataset.loadedSrc === item.previewUrl ? 'block' : 'none';
-              if (!stillAnimating && img.dataset.src !== item.previewUrl) {
-                img.dataset.src = item.previewUrl;
-                img.onload = function onPreviewLoaded() {
-                  img.dataset.loadedSrc = item.previewUrl;
-                  scheduleRender();
-                };
-                img.onerror = function onPreviewError() {
-                  img.dataset.loadedSrc = '';
-                  img.style.display = 'none';
-                };
-                img.src = item.previewUrl;
+              if (item.previewUrl) {
+                rememberPreview(index);
+                img.style.display = img.dataset.loadedSrc === item.previewUrl ? 'block' : 'none';
+                if (img.dataset.src !== item.previewUrl) {
+                  img.dataset.src = item.previewUrl;
+                  img.onload = function onPreviewLoaded() {
+                    img.dataset.loadedSrc = item.previewUrl;
+                    scheduleRender();
+                  };
+                  img.onerror = function onPreviewError() {
+                    img.dataset.loadedSrc = '';
+                    img.style.display = 'none';
+                  };
+                  img.src = item.previewUrl;
+                }
+              } else {
+                forgetPreview(index);
               }
             } else {
-              node.style.zIndex = String(index + 1);
+              node.style.zIndex =
+                newFocused == null && gridTransitionFocusIndex != null
+                  ? index === gridTransitionFocusIndex
+                    ? String(data.length + 1)
+                    : '1'
+                  : String(index + 1);
               node.classList.remove('description-expanded');
               promptNode.style.display = '-webkit-box';
               promptNode.style.overflowY = 'hidden';
@@ -957,8 +1286,8 @@
             }
 
             if (node.parentNode == null) document.body.appendChild(node);
-          } else if (node.parentNode != null) {
-            document.body.removeChild(node);
+          } else {
+            releaseBoxElements(item, index);
           }
         }
 
@@ -981,39 +1310,289 @@
         anchor = newAnchor;
         windowSizeX = newWindowSizeX;
         scrollY = adjustedScrollTop;
+        hasRendered = true;
         return stillAnimating;
       }
 
       statusNode.hidden = true;
       scheduleRender();
 
-      return function hydrateBox(index, item) {
+      function applyMetadata(index, item) {
+        if (item == null) return;
         const box = data[index];
-        if (!box || !box.skeleton) return Promise.resolve();
+        if (!box) return;
+
+        const nextAr = item.w / item.h;
+        if (Math.abs(box.ar - nextAr) > 0.001) layoutVersion += 1;
+        box.prompt = item.prompt;
+        box.naturalSizeX = Math.max(box.naturalSizeX, item.w);
+        box.ar = nextAr;
+        if (box.node != null) {
+          box.img.alt = item.prompt;
+          box.promptNode.textContent = item.prompt;
+          box.descriptionCardNode.textContent = item.prompt;
+        }
+        scheduleRender();
+      }
+
+      function hydrateBox(index, fetchPriority, signal) {
+        const box = data[index];
+        if (!box || !box.skeleton) return Promise.resolve(true);
 
         return new Promise(function preloadThumbnail(resolve) {
           const thumbnail = new Image();
+          let settled = false;
           thumbnail.decoding = 'async';
+          thumbnail.fetchPriority = fetchPriority;
+
+          function cleanup() {
+            thumbnail.onload = null;
+            thumbnail.onerror = null;
+            signal.removeEventListener('abort', cancelHydration);
+          }
+
+          function finishHydration(completed, thumbnailLoaded) {
+            if (settled) return;
+            settled = true;
+            cleanup();
+            if (completed) {
+              box.skeleton = false;
+              if (box.node != null) {
+                box.node.classList.remove('skeleton');
+                box.node.removeAttribute('aria-hidden');
+                box.node.style.backgroundImage = thumbnailLoaded
+                  ? 'url("' + box.thumbnailUrl.replace(/"/g, '%22') + '")'
+                  : 'none';
+                box.img.alt = box.prompt;
+                box.promptNode.textContent = box.prompt;
+                box.descriptionCardNode.textContent = box.prompt;
+              }
+              scheduleRender();
+            }
+            resolve(completed);
+          }
+
+          function cancelHydration() {
+            if (settled) return;
+            settled = true;
+            cleanup();
+            thumbnail.removeAttribute('src');
+            resolve(false);
+          }
+
+          if (signal.aborted) {
+            finishHydration(false, false);
+            return;
+          }
+          signal.addEventListener('abort', cancelHydration, { once: true });
           thumbnail.onload = function onThumbnailLoaded() {
-            box.previewUrl = item.previewUrl;
-            box.naturalSizeX = item.w;
-            box.ar = item.w / item.h;
-            box.skeleton = false;
-            box.node.classList.remove('skeleton');
-            box.node.removeAttribute('aria-hidden');
-            box.node.style.backgroundImage = 'url("' + item.thumbnailUrl.replace(/"/g, '%22') + '")';
-            box.img.alt = item.prompt;
-            box.promptNode.textContent = item.prompt;
-            box.descriptionCardNode.textContent = item.prompt;
-            scheduleRender();
-            resolve();
+            finishHydration(true, true);
           };
           thumbnail.onerror = function onThumbnailError() {
-            console.warn('Unable to load asset thumbnail', item.id);
-            resolve();
+            if (signal.aborted) {
+              finishHydration(false, false);
+              return;
+            }
+            console.warn('Unable to load asset thumbnail', box.id);
+            finishHydration(true, false);
           };
-          thumbnail.src = item.thumbnailUrl;
+          thumbnail.src = box.thumbnailUrl;
         });
+      }
+
+      return { applyMetadata, hydrateBox };
+    }
+
+    function createGalleryHydrator(result, gallery) {
+      const states = new Uint8Array(result.assets.length);
+      const priorityIndexes = [];
+      const priorityIndexSet = new Set();
+      const activeTasks = new Map();
+      const metadataStates = new Uint8Array(result.assets.length);
+      const metadataIndexes = [];
+      const concurrency = 8;
+      const prefetchConcurrency = 2;
+      const metadataConcurrency = 1;
+      let activeCount = 0;
+      let activePrefetchCount = 0;
+      let activeMetadataCount = 0;
+      let rangeStart = 0;
+      let rangeEnd = -1;
+      let visibleStart = 0;
+      let visibleEnd = -1;
+
+      function isVisibleIndex(index) {
+        return index >= visibleStart && index <= visibleEnd;
+      }
+
+      function nextPriorityIndex() {
+        while (priorityIndexes.length > 0) {
+          const index = priorityIndexes.shift();
+          priorityIndexSet.delete(index);
+          if (states[index] === 0) return index;
+        }
+        return -1;
+      }
+
+      function nextVisibleIndex() {
+        for (let index = visibleStart; index <= visibleEnd; index += 1) {
+          if (states[index] === 0) return index;
+        }
+        return -1;
+      }
+
+      function nextPrefetchIndex() {
+        for (let index = visibleStart - 1; index >= rangeStart; index -= 1) {
+          if (states[index] === 0) return index;
+        }
+        for (let index = visibleEnd + 1; index <= rangeEnd; index += 1) {
+          if (states[index] === 0) return index;
+        }
+        return -1;
+      }
+
+      function queueMetadata(index) {
+        if (!result.showMetadata || metadataStates[index] !== 0) return;
+        metadataStates[index] = 1;
+        metadataIndexes.push(index);
+        pumpMetadata();
+      }
+
+      function hasUnfinishedVisibleHydration() {
+        for (let index = visibleStart; index <= visibleEnd; index += 1) {
+          if (states[index] !== 2) return true;
+        }
+        return false;
+      }
+
+      function pumpMetadata() {
+        if (hasUnfinishedVisibleHydration()) return;
+        while (activeMetadataCount < metadataConcurrency && metadataIndexes.length > 0) {
+          const index = metadataIndexes.shift();
+          activeMetadataCount += 1;
+          void loadGalleryMetadata(result.assets[index], index)
+            .then(function applyLoadedMetadata(item) {
+              gallery.applyMetadata(index, item);
+            })
+            .catch(function onMetadataError(error) {
+              console.warn('Unable to apply asset metadata', result.assets[index].id, error);
+            })
+            .finally(function finishMetadata() {
+              metadataStates[index] = 2;
+              activeMetadataCount -= 1;
+              pumpMetadata();
+            });
+        }
+      }
+
+      function startHydration(index, isPrefetch) {
+        const controller = new AbortController();
+        const task = {
+          controller,
+          isPrefetch,
+          retryAsPriority: false,
+        };
+        let completed = true;
+        states[index] = 1;
+        activeTasks.set(index, task);
+        activeCount += 1;
+        if (isPrefetch) activePrefetchCount += 1;
+
+        void gallery.hydrateBox(index, isPrefetch ? 'low' : 'high', controller.signal)
+          .then(function recordHydrationResult(didComplete) {
+            completed = didComplete;
+          })
+          .catch(function onAssetHydrationError(error) {
+            console.warn('Unable to hydrate gallery item', result.assets[index].id, error);
+          })
+          .finally(function finishHydration() {
+            activeTasks.delete(index);
+            activeCount -= 1;
+            if (isPrefetch) activePrefetchCount -= 1;
+            states[index] = completed ? 2 : 0;
+            if (completed) queueMetadata(index);
+            else if (task.retryAsPriority) prioritizeIndex(index);
+            pumpMetadata();
+            pump();
+          });
+      }
+
+      function pump() {
+        while (activeCount < concurrency) {
+          const priorityIndex = nextPriorityIndex();
+          if (priorityIndex !== -1) {
+            startHydration(priorityIndex, false);
+            continue;
+          }
+
+          const visibleIndex = nextVisibleIndex();
+          if (visibleIndex !== -1) {
+            startHydration(visibleIndex, false);
+            continue;
+          }
+
+          if (activePrefetchCount >= prefetchConcurrency) return;
+          const prefetchIndex = nextPrefetchIndex();
+          if (prefetchIndex === -1) return;
+          startHydration(prefetchIndex, true);
+        }
+      }
+
+      function prioritizeIndex(index) {
+        if (index < 0 || index >= result.assets.length || states[index] === 2) return;
+        if (states[index] === 1) {
+          const task = activeTasks.get(index);
+          if (task?.isPrefetch) {
+            task.retryAsPriority = true;
+            task.controller.abort();
+          }
+          return;
+        }
+        if (!priorityIndexSet.has(index)) {
+          priorityIndexSet.add(index);
+          priorityIndexes.push(index);
+        }
+      }
+
+      function rebalanceActiveRequests() {
+        let hasPendingVisible = nextVisibleIndex() !== -1;
+        for (const [index, task] of activeTasks) {
+          if (index < rangeStart || index > rangeEnd) {
+            task.controller.abort();
+            continue;
+          }
+          if (task.isPrefetch && isVisibleIndex(index)) {
+            task.retryAsPriority = true;
+            task.controller.abort();
+            continue;
+          }
+          if (
+            hasPendingVisible &&
+            activeCount >= concurrency &&
+            !isVisibleIndex(index) &&
+            !task.retryAsPriority
+          ) {
+            task.controller.abort();
+            hasPendingVisible = nextVisibleIndex() !== -1;
+          }
+        }
+      }
+
+      return {
+        requestWindow(start, end, priorityStart, priorityEnd, focusedIndex) {
+          rangeStart = Math.min(result.assets.length - 1, Math.max(0, start));
+          rangeEnd = Math.min(result.assets.length - 1, Math.max(rangeStart, end));
+          visibleStart = Math.min(rangeEnd, Math.max(rangeStart, priorityStart));
+          visibleEnd = Math.min(rangeEnd, Math.max(visibleStart, priorityEnd));
+          if (Number.isInteger(focusedIndex)) prioritizeIndex(focusedIndex);
+          rebalanceActiveRequests();
+          pump();
+          pumpMetadata();
+        },
+        requestIndex(index) {
+          prioritizeIndex(index);
+          pump();
+        },
       };
     }
 
@@ -1023,15 +1602,28 @@
           setStatus('This album is empty', 'No image assets were returned by Immich.');
           return;
         }
-        const hydrateBox = startGallery(result.items);
-        if (result.remainingAssets.length > 0) {
-          void mapWithConcurrency(result.remainingAssets, 6, async function loadRemainingAsset(asset, index) {
-            const itemIndex = result.remainingOffset + index;
-            const item = await loadGalleryItem(asset, itemIndex, result.showMetadata);
-            await hydrateBox(itemIndex, item);
-          }).catch(function onRemainingAssetsError(error) {
-            console.error('Unable to finish loading the album', error);
-          });
+
+        let requestHydrationWindow = function ignoreEarlyHydrationRequest() {};
+        const gallery = startGallery(result.items, function requestVisibleWindow(
+          start,
+          end,
+          visibleStart,
+          visibleEnd,
+          focusedIndex,
+        ) {
+          requestHydrationWindow(start, end, visibleStart, visibleEnd, focusedIndex);
+        });
+        const hydrator = createGalleryHydrator(result, gallery);
+        requestHydrationWindow = hydrator.requestWindow;
+
+        let hashImageId = '';
+        try {
+          hashImageId = decodeURIComponent(window.location.hash.slice(1));
+        } catch {}
+        if (hashImageId) {
+          hydrator.requestIndex(result.assets.findIndex(function findHashAsset(asset) {
+            return asset.id === hashImageId;
+          }));
         }
       })
       .catch(function onGalleryError(error) {
