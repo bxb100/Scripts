@@ -67,6 +67,9 @@ DOMAIN,daily-cloudcode-pa.sandbox.googleapis.com
 DOMAIN-SUFFIX,us-central1.run.app
 DOMAIN,daily-cloudcode-pa.googleapis.com
 
+# >> Google Android Studio
+DOMAIN,aicode.googleapis.com
+
 # >> Perplexity
 DOMAIN-SUFFIX,perplexity.ai
 DOMAIN,perplexity-ai.cloudflareaccess.com
