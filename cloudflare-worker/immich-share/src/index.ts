@@ -164,10 +164,25 @@ function isAllowedApi(pathname: string, method: string, searchParams: URLSearchP
 
 async function sanitizeSharedLinkResponse(response: Response): Promise<Response> {
 	const payload = await readJson(response);
-	if (!isRecord(payload) || !isRecord(payload.album) || typeof payload.album.id !== 'string') {
+
+	if (!isRecord(payload)) {
 		logError('upstream_payload_invalid', { endpoint: '/api/shared-links/me' });
 		return upstreamErrorResponse(502);
 	}
+
+	if (payload?.type === 'INDIVIDUAL') {
+		return jsonResponse({
+			type: 'INDIVIDUAL',
+			assets: payload.assets,
+			showMetadata: payload.showMetadata
+		});
+	}
+
+	if (!isRecord(payload.album) || typeof payload.album.id !== 'string') {
+		logError('upstream_payload_invalid', { endpoint: '/api/shared-links/me' });
+		return upstreamErrorResponse(502);
+	}
+
 	const album = payload.album;
 
 	return jsonResponse(
