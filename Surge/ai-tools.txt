@@ -83,6 +83,7 @@ DOMAIN-SUFFIX,poe.com
 
 # >> Meta AI
 DOMAIN-SUFFIX,meta.ai
+DOMAIN-SUFFIX,metaaivm.com
 
 # >> Cloudflare AI Gateway
 DOMAIN,gateway.ai.cloudflare.com
