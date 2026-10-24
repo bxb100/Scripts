@@ -59,6 +59,8 @@ DOMAIN-SUFFIX,generativeai.google
 # >> Google NotebookLM
 DOMAIN-SUFFIX,notebooklm.google
 DOMAIN-SUFFIX,notebooklm.google.com
+DOMAIN,notebooklm-pa.googleapis.com
+DOMAIN-SUFFIX,notebook.google
 
 # >> Google antigravity
 DOMAIN,antigravity-unleash.goog
