@@ -120,3 +120,16 @@ DOMAIN-SUFFIX,diabrowser.engineering
 DOMAIN-SUFFIX,jetbrains.ai
 DOMAIN,junie.jetbrains.com
 DOMAIN,ingrazzio-cloud-prod.labs.jb.gg
+
+# >> Mistral
+DOMAIN-SUFFIX,mistral.ai
+
+# >> Moonshot / Kimi
+DOMAIN-SUFFIX,kimi.ai
+DOMAIN-SUFFIX,moonshot.ai
+
+# >> DeepSeek
+DOMAIN-SUFFIX,deepseek.com
+
+# >> Zhipu
+DOMAIN-SUFFIX,z.ai
