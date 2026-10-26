@@ -42,7 +42,6 @@ DOMAIN-SUFFIX,bard.google.com
 DOMAIN-SUFFIX,gemini.google
 DOMAIN-SUFFIX,gemini.google.com
 DOMAIN,robinfrontend-pa.googleapis.com
-URL-REGEX,https://www\.google\.com/.*continue=https://gemini\.google\.com.+
 
 # >> Google DeepMind
 DOMAIN-SUFFIX,deepmind.com
@@ -139,3 +138,14 @@ DOMAIN,api.jetbrains.ai
 
 # >> Grok
 DOMAIN-SUFFIX,grok.com
+
+# >> OpenRouter AI - Unified Relay
+DOMAIN,openrouter.ai
+
+# >> Cursor
+DOMAIN-SUFFIX,cursor.sh
+
+# >> Windsurf (formerly Codeium)
+DOMAIN,server.codeium.com
+DOMAIN,inference.codeium.com
+DOMAIN,server.self-serve.windsurf.com
