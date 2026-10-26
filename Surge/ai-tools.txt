@@ -17,6 +17,7 @@ DOMAIN-KEYWORD,openai
 # DOMAIN,openaicom-api-bdcpf8c6d2e9atf6.z01.azurefd.net
 # DOMAIN,openaicomproductionae4b.blob.core.windows.net
 # DOMAIN,production-openaicom-storage.azureedge.net
+DOMAIN-SUFFIX,chatgpt.site
 
 # >> Google 产品
 PROCESS-NAME,Gemini
@@ -37,6 +38,10 @@ DOMAIN,gemini.google.com
 DOMAIN,play.google.com
 DOMAIN,mtalk.google.com
 DOMAIN,www.google.com
+DOMAIN-SUFFIX,bard.google.com
+DOMAIN-SUFFIX,gemini.google
+DOMAIN-SUFFIX,gemini.google.com
+DOMAIN,robinfrontend-pa.googleapis.com
 
 # >> Google DeepMind
 DOMAIN-SUFFIX,deepmind.com
@@ -55,6 +60,9 @@ DOMAIN,alkalicore-pa.clients6.google.com
 DOMAIN,alkalimakersuite-pa.clients6.google.com
 DOMAIN-WILDCARD,*.clients?.google.com
 DOMAIN-SUFFIX,generativeai.google
+DOMAIN,aisandbox-pa.googleapis.com
+DOMAIN-SUFFIX,g.ai
+DOMAIN-KEYWORD,alkalimakersuite-pa.clients6.google.com
 
 # >> Google NotebookLM
 DOMAIN-SUFFIX,notebooklm.google
@@ -68,6 +76,8 @@ DOMAIN,lh3.googleusercontent.com
 DOMAIN,daily-cloudcode-pa.sandbox.googleapis.com
 DOMAIN-SUFFIX,us-central1.run.app
 DOMAIN,daily-cloudcode-pa.googleapis.com
+DOMAIN,antigravity.google
+DOMAIN-SUFFIX,cloudcode-pa.googleapis.com
 
 # >> Google Android Studio
 DOMAIN,aicode.googleapis.com
@@ -80,6 +90,7 @@ DOMAIN,perplexity-ai.cloudflareaccess.com
 DOMAIN-SUFFIX,anthropic.com
 DOMAIN-SUFFIX,claude.ai
 DOMAIN-SUFFIX,claude.com
+DOMAIN-SUFFIX,clau.de
 
 # >> POE
 DOMAIN-SUFFIX,poe.com
@@ -87,6 +98,7 @@ DOMAIN-SUFFIX,poe.com
 # >> Meta AI
 DOMAIN-SUFFIX,meta.ai
 DOMAIN-SUFFIX,metaaivm.com
+DOMAIN-SUFFIX,muse.ai
 
 # >> Cloudflare AI Gateway
 DOMAIN,gateway.ai.cloudflare.com
@@ -123,3 +135,18 @@ DOMAIN-SUFFIX,diabrowser.engineering
 DOMAIN-SUFFIX,jetbrains.ai
 DOMAIN,junie.jetbrains.com
 DOMAIN,ingrazzio-cloud-prod.labs.jb.gg
+DOMAIN,api.jetbrains.ai
+
+# >> Grok
+DOMAIN-SUFFIX,grok.com
+
+# >> OpenRouter AI - Unified Relay
+DOMAIN,openrouter.ai
+
+# >> Cursor
+DOMAIN-SUFFIX,cursor.sh
+
+# >> Windsurf (formerly Codeium)
+DOMAIN,server.codeium.com
+DOMAIN,inference.codeium.com
+DOMAIN,server.self-serve.windsurf.com
