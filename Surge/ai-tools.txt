@@ -130,6 +130,7 @@ DOMAIN,llm-staging.zed.dev
 
 # >> DIA
 DOMAIN-SUFFIX,diabrowser.engineering
+DOMAIN-SUFFIX,diabrowser.com
 
 # >> Jetbrains
 DOMAIN-SUFFIX,jetbrains.ai
@@ -150,3 +151,4 @@ DOMAIN-SUFFIX,cursor.sh
 DOMAIN,server.codeium.com
 DOMAIN,inference.codeium.com
 DOMAIN,server.self-serve.windsurf.com
+DOMAIN-SUFFIX,devin.ai
