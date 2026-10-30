@@ -129,7 +129,6 @@ DOMAIN,cloud.zed.dev
 DOMAIN,llm-staging.zed.dev
 
 # >> DIA
-DOMAIN-SUFFIX,diabrowser.engineering
 
 # >> Jetbrains
 DOMAIN-SUFFIX,jetbrains.ai
