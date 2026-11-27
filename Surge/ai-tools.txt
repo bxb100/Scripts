@@ -91,6 +91,8 @@ DOMAIN-SUFFIX,anthropic.com
 DOMAIN-SUFFIX,claude.ai
 DOMAIN-SUFFIX,claude.com
 DOMAIN-SUFFIX,clau.de
+DOMAIN,bridge.claudeusercontent.com
+DOMAIN,claude.site
 
 # >> POE
 DOMAIN-SUFFIX,poe.com
@@ -99,6 +101,7 @@ DOMAIN-SUFFIX,poe.com
 DOMAIN-SUFFIX,meta.ai
 DOMAIN-SUFFIX,metaaivm.com
 DOMAIN-SUFFIX,muse.ai
+DOMAIN-SUFFIX,dreamrender.com
 
 # >> Cloudflare AI Gateway
 DOMAIN,gateway.ai.cloudflare.com
